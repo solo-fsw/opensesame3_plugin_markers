@@ -14,18 +14,10 @@ import serial
 import sys
 import re
 
-import serial_lib
-
-# Connection parameters for the ParMarker in data mode:
-parmarker_data_params = { "baudrate": 115200, "bytesize": 8
-                                , "parity": 'N', "stopbits": 1
-                                , "timeout": 2}
+import marker_management as mark
 
 
-
-
-
-class parmarker_init(item):
+class markers(item):
 
 	"""
 	This class (the class with the same name as the module) handles the basic
@@ -33,8 +25,7 @@ class parmarker_init(item):
 	"""
 
 	# Provide an informative description for your plug-in.
-	description = u'Initializes a USB ParMarker device. This item can only be used once.'
-
+	description = u'Handles communication with Leiden Univ marker devices'
 
 	def reset(self):
 
@@ -43,60 +34,106 @@ class parmarker_init(item):
 			Resets plug-in to initial values.
 		"""
 
+		self.var.marker_device = u'UsbParMar'
+		self.var.marker_mode = u'Send marker'
+		self.var.marker_device_addr = u'ANY'
+		self.var.marker_device_serial = u'ANY'
+		self.var.marker_device_tag = u'marker_device_1'
+		self.var.marker_value = 0
+		self.var.marker_duration = 0
+		self.var.marker_reset_to_zero = 'yes'
+		self.var.marker_crash_on_mark_errors = u'yes'
+		self.var.marker_dummy_mode = 'yes'
+		self.var.marker_gen_mark_file = u'yes'
+		self.var.marker_flash_255 = u'yes'
 
-		self.var.mode           = u'Send marker'
-		self.var.parmarker_addr = u'ANY'
-		self.var.parmarker_tag  = u'ParMarker'
-		self.var.marker_value   = 0
-		self.var.object_duration = 0
+		print(self.var.marker_duration)
+		print(type(self.var.marker_duration))
 
-		self.var.flash_255           = u'yes'
-		self.var.throw_error_on_repeat           = u'yes'
-		self.var.throw_error_on_too_short_marker = u'yes'
-		self.var.throw_soft_errors               = u'no'
-
+	def get_device(self):
+		if self.var.marker_device == u'UsbParMar':
+			device = 'UsbParMar'
+		elif self.var.marker_device == u'EVA':
+			device = 'EVA'
+		else:
+			raise osexception(u'INTERNAL ERROR')
+		return device
 
 	def get_cur_mode(self):
-		if self.var.mode == u'Send marker':
+		if self.var.marker_mode == u'Send marker':
 			mode = 'send'
-		elif self.var.mode == u'Initialize ParMarker':
+		elif self.var.marker_mode == u'Initialize':
 			mode = 'init'
 		else:
 			raise osexception(u'INTERNAL ERROR')
 		return mode
 
+	def get_addr(self):
+		return self.var.marker_device_addr
 
-	
+	def get_serial(self):
+		return self.var.marker_device_serial
+
 	def get_tag(self):
-		return self.var.parmarker_tag
+		return self.var.marker_device_tag
+
+	def get_dummy_mode(self):
+		if self.var.marker_dummy_mode == u'yes':
+			dummy_mode = True
+		else:
+			dummy_mode = False
+		return dummy_mode
+
+	def get_crash_on_mark_error(self):
+		if self.var.marker_crash_on_mark_errors == u'yes':
+			crash_on_mark_error = True
+		else:
+			crash_on_mark_error = False
+		return crash_on_mark_error
 		
 	def is_already_init(self):
-		return hasattr(self.experiment, f"parmarker_serial_{self.get_tag()}")
+		return hasattr(self.experiment, f"markers_{self.get_tag()}")
 
-	def get_serial_manager(self):
+	def get_marker_manager(self):
 		if self.is_already_init():
-			return getattr(self.experiment, f"parmarker_serial_{self.get_tag()}")
+			return getattr(self.experiment, f"markers_{self.get_tag()}")
 		else:
 			return None
 
-	def set_serial_manager(self, ser_man):
-		setattr(self.experiment, f"parmarker_serial_{self.get_tag()}", ser_man)
+	def set_marker_manager(self, mark_man):
+		setattr(self.experiment, f"markers_{self.get_tag()}", mark_man)
 
-	
 	def prepare(self):
 
 		"""
 		desc:
-			Prepare.
+			Prepare phase.
 		"""
 		
 		# Call the parent constructor.
 		item.prepare(self)
 
 		if self.get_cur_mode() == "init":
+			# Do noting in prepare when in init mode.
+			pass
+		elif self.get_cur_mode() == "send":
+			# Do noting in prepare when in send mode.
+			pass
+		else:
+			raise osexception("Internal mode error.")
+
+	def run(self):
+		
+		"""
+		desc:
+			Run phase.
+		"""
+		
+		if self.get_cur_mode() == "init":
+
 			if self.is_already_init():
 				# Raise error since you cannot init twice.
-				pass
+				raise osexception("Marker device already initialized.")
 			else:
 				# Initializes device.
 
@@ -104,59 +141,56 @@ class parmarker_init(item):
 				info = self.resolve_com_port()
 
 				# Build serial manager:
-				serial_manager = serial_lib.Serial_Manager(com_port=info['com_port'])
-				self.set_serial_manager(serial_manager)
+				marker_manager = mark.MarkerManager(self.var.marker_device,
+													device_address=info['com_port'],
+													fallback_to_fake=self.get_dummy_mode(),
+													crash_on_marker_errors=self.get_crash_on_mark_error(),
+													time_function_us=lambda: self.time() * 1000)
+				self.set_marker_manager(marker_manager)
 
+				# Flash 255
 				pulse_dur = 100
-				if self.var.flash_255 == 'yes':
-					serial_manager.send(255)
+				if self.var.marker_flash_255 == 'yes':
+					marker_manager.set_value(255)
 					self.sleep(pulse_dur)
-					serial_manager.send(0)
+					marker_manager.set_value(0)
 					self.sleep(pulse_dur)
-					serial_manager.send(255)
+					marker_manager.set_value(255)
 					self.sleep(pulse_dur)
 
 				# Reset:
-				serial_manager.send(0)
+				marker_manager.set_value(0)
 				self.sleep(pulse_dur)
 
-				
 				# Register de-constructor:
-				self.experiment.cleanup_functions.append(self.close)
+				# self.experiment.cleanup_functions.append(marker_manager.set_value(0))
+				# self.experiment.cleanup_functions.append(self.sleep(pulse_dur))
+				# self.experiment.cleanup_functions.append(self.close())
+				# if self.var.marker_gen_mark_file == u'yes':
+				# 	self.experiment.cleanup_functions.append(marker_manager.save_marker_table())
 
-		elif self.get_cur_mode() == "send":
-			# Do noting in prepare when in send mode.
-			pass
-		else:
-			raise osexception("Internal mode error.")
-
-
-	def run(self):
-		
-		"""
-		desc:
-			Sets up and opens the serial device.
-		"""
-		
-		if self.get_cur_mode() == "init":
-			# Do nothing in run in init mode.
-			pass
 		elif self.get_cur_mode() == "send":
 			
 			# Check if initialized:
 			if not self.is_already_init():
-				raise osexception("You must have a ParMarker object in initialize mode before sending markers.")
+				raise osexception("You must have a marker object in initialize mode before sending markers.")
 
 			# Send marker:
 			try:
-				self.get_serial_manager().send(int(self.var.marker_value))
-
+				self.get_marker_manager().set_value(int(self.var.marker_value))
 			except:
 				raise osexception(f"Error sending marker: {sys.exc_info()[1]}")
 		
-		self.sleep(int(self.var.marker_value))
-		self.set_item_onset()
+			self.sleep(int(self.var.marker_duration))
 
+			if self.get_cur_mode() == 'send' and self.var.marker_duration > 5 and self.var.marker_reset_to_zero == 'yes':
+				# Reset to 0:
+				try:
+					self.get_marker_manager().set_value(int(self.var.marker_value))
+				except:
+					raise osexception(f"Error sending marker: {sys.exc_info()[1]}")
+
+		self.set_item_onset()
 
 	def close(self):
 
@@ -166,40 +200,34 @@ class parmarker_init(item):
 		"""
 
 		try:
-			self.experiment.parmarker_serial.close()
-			print("Disconnected from ParMarker device.")
+			self.get_marker_manager().close()
+			print("Disconnected from marker device.")
 		except:
 			pass
 
-
-
 	def resolve_com_port(self):
 
-		# Resolve the port to use:
-		if self.var.parmarker_addr == "ANY":
-			port_regexp = "^.*$"
-		elif self.var.parmarker_addr == 'FAKE':
-			port_regexp = serial_lib.Serial_Manager.FAKE_COM_ADDR
-		elif re.match("^COM\d{1,3}", self.var.parmarker_addr) != None:
-			port_regexp = "^" + self.var.parmarker_addr + "$"
-		else:
-			raise osexception("Incorrect ParMarker address:")
-		
-		# Find device:
+		# Get device type
+		device_type = self.get_device()
+		serialno = self.get_serial()
+		addr = self.get_addr()
+		dummy_mode = self.get_dummy_mode()
+
+		# Check com address
+		if addr != 'ANY' and re.match("^COM\d{1,3}", addr) == None:
+			raise osexception("Incorrect marker device address address:")
+
+		# Find device
 		try:
-			com_filters = serial_lib.gen_com_filters(port_regex = port_regexp)
-			info = serial_lib.find_device(com_filters)
+			device_info = mark.find_device(device_type=device_type, serial_no=serialno,
+										   com_port=addr, fallback_to_fake=dummy_mode)
 		except:
-			raise osexception(f"ParMarker init error: {sys.exc_info()[1]}")
+			raise osexception(f"Marker device init error: {sys.exc_info()[1]}")
 
-		return info
-	
-
+		return device_info
 
 
-
-
-class qtparmarker_init(parmarker_init, qtautoplugin):
+class qtmarkers(markers, qtautoplugin):
 
 	"""
 	This class handles the GUI aspect of the plug-in. By using qtautoplugin, we
@@ -221,7 +249,7 @@ class qtparmarker_init(parmarker_init, qtautoplugin):
 
 		# We don't need to do anything here, except call the parent
 		# constructors.
-		parmarker_init.__init__(self, name, experiment, script)
+		markers.__init__(self, name, experiment, script)
 		qtautoplugin.__init__(self, __file__)
 
 
@@ -273,33 +301,33 @@ class qtparmarker_init(parmarker_init, qtautoplugin):
 
 		"""
 		desc:
-			Activates the relevant controls for each tracker.
+			Activates the relevant controls for each setting.
 		"""
 
 
 		cur_mode = self.get_cur_mode()
 		if cur_mode == "init":
-
-			enableIt = True
-
+			enable_init = True
 		elif cur_mode == "send":
+			enable_init = False
 
-			enableIt = False
+		if cur_mode == "send" and self.var.marker_duration > 5:
+			enable_reset = True
+		else:
+			enable_reset = False
 
-			
-		self.parmarker_addr_widget.setEnabled(enableIt)
-		self.parmarker_tag_widget.setEnabled(enableIt)
+		self.marker_device_widget.setEnabled(True)
+		self.marker_mode_widget.setEnabled(True)
 
-		self.marker_value_widget.setEnabled(not enableIt)
-		self.object_duration_widget.setEnabled(not enableIt)
+		self.marker_device_addr_widget.setEnabled(enable_init)
+		self.marker_device_serial_widget.setEnabled(enable_init)
+		self.marker_device_tag_widget.setEnabled(True)
 
-		self.flash_255_widget.setEnabled(enableIt)
-		self.throw_error_on_repeat_widget.setEnabled(enableIt)
-		self.throw_error_on_too_short_marker_widget.setEnabled(enableIt)
-		self.throw_soft_errors_widget.setEnabled(enableIt)
+		self.marker_value_widget.setEnabled(not enable_init)
+		self.marker_object_duration_widget.setEnabled(not enable_init)
+		self.marker_reset_to_zero_widget.setEnabled(not enable_init)
 
-
-
-
-
-
+		self.marker_crash_on_mark_errors_widget.setEnabled(enable_init)
+		self.marker_dummy_mode_widget.setEnabled(enable_init)
+		self.marker_gen_mark_file_widget.setEnabled(enable_init)
+		self.marker_flash_255_widget.setEnabled(enable_init)

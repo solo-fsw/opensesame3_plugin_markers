@@ -12,9 +12,9 @@ import os
 import glob
 from setuptools import setup
 
-parmarker_version = '0.1.0'
+markers_version = '0.1.0'
 
-print("Running setup for ParMarker version {}.".format(parmarker_version))
+print("Running setup for markers version {}.".format(markers_version))
 
 def files(path):
 	
@@ -30,29 +30,26 @@ def data_files():
 
 	# Return the target folders and their respective data files:
 	return [
-		("share/opensesame_plugins/parmarker_init",
-			files("opensesame_plugins/parmarker_init/*"))
+		("share/opensesame_plugins/markers",
+			files("opensesame_plugins/markers/*"))
 	]
 
 
 setup(
 	# Some general metadata. By convention, a plugin is named:
 	# opensesame-plugin-[plugin name]
-	name='opensesame-plugin-usbparmarker',
-	version=parmarker_version,
-	description='Plugin for controlling the UsbParMarker device.',
+	name='opensesame-plugin-markers',
+	version=markers_version,
+	description='Plugin for controlling Leiden Univ marker devices.',
 	author='Research Support FSW',
 	author_email='labsupport@fsw.leidenuniv.nl',
-	url='https://github.com/solo-fsw/opensesame_plugin_usbparmarker',
+	url='https://github.com/solo-fsw/opensesame_plugin_markers',
 	# Classifiers used by PyPi if you upload the plugin there
 	classifiers=[
 		'Intended Audience :: Science/Research',
 		'Topic :: Scientific/Engineering',
-		'Environment :: MacOS X',
 		'Environment :: Win32 (MS Windows)',
-		'Environment :: X11 Applications',
 		'License :: OSI Approved :: Apache Software License',
-		'Programming Language :: Python :: 2',
 		'Programming Language :: Python :: 3',
 	],
 	# The important bit that specifies how the plugin files should be installed,
