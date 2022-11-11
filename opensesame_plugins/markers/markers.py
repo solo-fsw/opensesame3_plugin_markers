@@ -13,6 +13,7 @@ from libopensesame.exceptions import osexception
 import serial
 import sys
 import re
+import os
 
 import marker_management as mark
 
@@ -33,28 +34,26 @@ class markers(item):
 		desc:
 			Resets plug-in to initial values.
 		"""
-
-		self.var.marker_device = u'UsbParMar'
+		self.var.marker_device = u'ANY'
 		self.var.marker_mode = u'Send marker'
 		self.var.marker_device_addr = u'ANY'
 		self.var.marker_device_serial = u'ANY'
 		self.var.marker_device_tag = u'marker_device_1'
 		self.var.marker_value = 0
-		self.var.marker_duration = 0
-		self.var.marker_reset_to_zero = 'yes'
+		self.var.marker_object_duration = 0
+		self.var.marker_reset_to_zero = 'no'
 		self.var.marker_crash_on_mark_errors = u'yes'
-		self.var.marker_dummy_mode = 'yes'
-		self.var.marker_gen_mark_file = u'yes'
-		self.var.marker_flash_255 = u'yes'
-
-		print(self.var.marker_duration)
-		print(type(self.var.marker_duration))
+		self.var.marker_dummy_mode = 'no'
+		self.var.marker_gen_mark_file = u'no'
+		self.var.marker_flash_255 = u'no'
 
 	def get_device(self):
-		if self.var.marker_device == u'UsbParMar':
-			device = 'UsbParMar'
+		if self.var.marker_device == u'UsbParMarker':
+			device = 'UsbParMarker'
 		elif self.var.marker_device == u'EVA':
 			device = 'EVA'
+		elif self.var.marker_device == u'ANY':
+			device = 'ANY'
 		else:
 			raise osexception(u'INTERNAL ERROR')
 		return device
@@ -92,7 +91,11 @@ class markers(item):
 		return crash_on_mark_error
 		
 	def is_already_init(self):
-		return hasattr(self.experiment, f"markers_{self.get_tag()}")
+		try:
+			print('try getting hasattr')
+			return hasattr(self.experiment, f"markers_{self.get_tag()}")
+		except:
+			return False
 
 	def get_marker_manager(self):
 		if self.is_already_init():
@@ -102,6 +105,15 @@ class markers(item):
 
 	def set_marker_manager(self, mark_man):
 		setattr(self.experiment, f"markers_{self.get_tag()}", mark_man)
+
+	def get_init_vars(self):
+		if self.is_already_init():
+			return getattr(self.experiment, f"markers_vars_{self.get_tag()}")
+		else:
+			return None
+
+	def set_init_vars(self, init_vars):
+		setattr(self.experiment, f"marker_vars_{self.get_tag()}", init_vars)
 
 	def prepare(self):
 
@@ -135,15 +147,19 @@ class markers(item):
 				# Raise error since you cannot init twice.
 				raise osexception("Marker device already initialized.")
 			else:
-				# Initializes device.
-
-				# Resolve device:
-				info = self.resolve_com_port()
+				# Set Fake device in dummy mode
+				if self.get_dummy_mode():
+					com_port = 'FAKE'
+					device = 'FAKE DEVICE'
+				else:
+					# Resolve device:
+					info = self.resolve_com_port()
+					device = info['device']['Device']
+					com_port = info['com_port']
 
 				# Build serial manager:
-				marker_manager = mark.MarkerManager(self.var.marker_device,
-													device_address=info['com_port'],
-													fallback_to_fake=self.get_dummy_mode(),
+				marker_manager = mark.MarkerManager(device_type=device,
+													device_address=com_port,
 													crash_on_marker_errors=self.get_crash_on_mark_error(),
 													time_function_us=lambda: self.time() * 1000)
 				self.set_marker_manager(marker_manager)
@@ -163,11 +179,11 @@ class markers(item):
 				self.sleep(pulse_dur)
 
 				# Register de-constructor:
-				# self.experiment.cleanup_functions.append(marker_manager.set_value(0))
-				# self.experiment.cleanup_functions.append(self.sleep(pulse_dur))
-				# self.experiment.cleanup_functions.append(self.close())
-				# if self.var.marker_gen_mark_file == u'yes':
-				# 	self.experiment.cleanup_functions.append(marker_manager.save_marker_table())
+				self.experiment.cleanup_functions.append(self.reset_value)
+				if self.var.marker_gen_mark_file == u'yes':
+					self.experiment.cleanup_functions.append(self.gen_marker_file)
+				self.experiment.cleanup_functions.append(self.close)
+				self.experiment.cleanup_functions.append(self.show_marker_table)
 
 		elif self.get_cur_mode() == "send":
 			
@@ -180,17 +196,31 @@ class markers(item):
 				self.get_marker_manager().set_value(int(self.var.marker_value))
 			except:
 				raise osexception(f"Error sending marker: {sys.exc_info()[1]}")
-		
-			self.sleep(int(self.var.marker_duration))
 
-			if self.get_cur_mode() == 'send' and self.var.marker_duration > 5 and self.var.marker_reset_to_zero == 'yes':
-				# Reset to 0:
+			# Sleep for object duration (blocking)
+			self.sleep(int(self.var.marker_object_duration))
+
+			# Reset marker value to zero, if specified:
+			if self.var.marker_object_duration > 5 and self.var.marker_reset_to_zero == 'yes':
+
 				try:
-					self.get_marker_manager().set_value(int(self.var.marker_value))
+					self.get_marker_manager().set_value(0)
 				except:
 					raise osexception(f"Error sending marker: {sys.exc_info()[1]}")
 
 		self.set_item_onset()
+
+	def reset_value(self):
+		self.get_marker_manager().set_value(0)
+		self.sleep(100)
+
+	def gen_marker_file(self):
+		self.get_marker_manager().save_marker_table(self.experiment.experiment_path)
+
+	def show_marker_table(self):
+		marker_df, summary_df, error_df = self.get_marker_manager().gen_marker_table()
+		self.experiment.open_markdown()
+
 
 	def close(self):
 
@@ -207,20 +237,31 @@ class markers(item):
 
 	def resolve_com_port(self):
 
-		# Get device type
-		device_type = self.get_device()
-		serialno = self.get_serial()
-		addr = self.get_addr()
-		dummy_mode = self.get_dummy_mode()
+		if self.get_device() == 'ANY':
+			device_type = ''
+		else:
+			device_type = self.get_device()
 
-		# Check com address
-		if addr != 'ANY' and re.match("^COM\d{1,3}", addr) == None:
-			raise osexception("Incorrect marker device address address:")
+		if self.get_addr() == 'ANY':
+			addr = ''
+		else:
+			addr = self.get_addr()
+
+			# Check com address
+			if re.match("^COM\d{1,3}", addr) is None:
+				raise osexception("Incorrect marker device address address:")
+
+		if self.get_serial() == 'ANY':
+			serialno = ''
+		else:
+			serialno = self.get_serial()
 
 		# Find device
 		try:
-			device_info = mark.find_device(device_type=device_type, serial_no=serialno,
-										   com_port=addr, fallback_to_fake=dummy_mode)
+			device_info = mark.find_device(device_type=device_type,
+										   serial_no=serialno,
+										   com_port=addr,
+										   fallback_to_fake=True)
 		except:
 			raise osexception(f"Marker device init error: {sys.exc_info()[1]}")
 
@@ -304,17 +345,11 @@ class qtmarkers(markers, qtautoplugin):
 			Activates the relevant controls for each setting.
 		"""
 
-
 		cur_mode = self.get_cur_mode()
 		if cur_mode == "init":
 			enable_init = True
 		elif cur_mode == "send":
 			enable_init = False
-
-		if cur_mode == "send" and self.var.marker_duration > 5:
-			enable_reset = True
-		else:
-			enable_reset = False
 
 		self.marker_device_widget.setEnabled(True)
 		self.marker_mode_widget.setEnabled(True)
@@ -322,6 +357,7 @@ class qtmarkers(markers, qtautoplugin):
 		self.marker_device_addr_widget.setEnabled(enable_init)
 		self.marker_device_serial_widget.setEnabled(enable_init)
 		self.marker_device_tag_widget.setEnabled(True)
+
 
 		self.marker_value_widget.setEnabled(not enable_init)
 		self.marker_object_duration_widget.setEnabled(not enable_init)
@@ -331,3 +367,12 @@ class qtmarkers(markers, qtautoplugin):
 		self.marker_dummy_mode_widget.setEnabled(enable_init)
 		self.marker_gen_mark_file_widget.setEnabled(enable_init)
 		self.marker_flash_255_widget.setEnabled(enable_init)
+
+		device_tag = self.get_tag()
+
+		if re.search(r"\s", device_tag) is not None:
+			self.extension_manager.fire('notify',
+				message = '<strong>Warning</strong>: The Device tag name must not include spaces',
+				category = 'warning',
+				timeout = 10000,
+				always_show = True)
