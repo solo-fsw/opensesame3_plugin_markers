@@ -178,7 +178,12 @@ class markers(item):
 				marker_manager.set_value(0)
 				self.sleep(pulse_dur)
 
-				# Register de-constructor:
+				# Register cleanup functions:
+				# opensesame.experiment.main_window.tabwidget.open_markdown('mark')
+				# Generate markdown header (text with tab and run info etc.), append it with:
+				# 	MD of summary table, erro table and marker table.
+
+				# Todo: 1 cleanup function
 				self.experiment.cleanup_functions.append(self.reset_value)
 				if self.var.marker_gen_mark_file == u'yes':
 					self.experiment.cleanup_functions.append(self.gen_marker_file)
