@@ -4,7 +4,7 @@ This module contains code for sending markers using various devices available at
 
 Devices:
     UsbParMarker
-    EVA
+    Eva
 
 FOR DEV:
 
@@ -41,7 +41,7 @@ FAKE_ADDRESS = 'FAKE'
 FAKE_DEVICE = 'FAKE DEVICE'
 
 # Indicate devices here
-available_devices = {'UsbParMarker', 'EVA', FAKE_DEVICE}
+available_devices = {'UsbParMarker', 'Eva', FAKE_DEVICE}
 
 
 class MarkerManager:
@@ -53,8 +53,8 @@ class MarkerManager:
         UsbParMarker:
             This mode uses the "UsbParMarker" gadget to send markers. The device_address
             param must be its COM address (e.g. COM3).
-        EVA:
-            This mode uses the "EVA" gadget to send markers. The device_address
+        Eva:
+            This mode uses the "Eva" gadget to send markers. The device_address
             param must be its COM address (e.g. COM3).
 
     """
@@ -111,8 +111,8 @@ class MarkerManager:
         self.device_type = device_type
         if self.device_type == 'UsbParMarker':
             self.device_interface = UsbParMarker(device_address)
-        elif self.device_type == 'EVA':
-            self.device_interface = EVA(device_address)
+        elif self.device_type == 'Eva':
+            self.device_interface = Eva(device_address)
         # Create general serial device when device is fake
         elif self.device_type == FAKE_DEVICE:
             self.device_interface = SerialDevice(FAKE_ADDRESS)
@@ -267,7 +267,7 @@ class MarkerManager:
 
         Toggle a single bit, leave other bits intact.
 
-        Use EVA bit numbering convention: 0 - 7 -> 0 is MSB?
+        Use Eva bit numbering convention: 0 - 7 -> 0 is MSB?
 
         """
 
@@ -696,8 +696,8 @@ class UsbParMarker(SerialDevice):
         return leds_off_answer
 
 
-class EVA(SerialDevice):
-    """Class for EVA device.
+class Eva(SerialDevice):
+    """Class for Eva device.
     Note, the subclass constructors must throw errors if the specified parameters cannot be resolved.
     E.g., no device with the specified address exist, or it it is not of the expected type.
 
@@ -745,7 +745,7 @@ def gen_com_filters(device_regex='^.*$',
 def find_device(device_type='', serial_no='', com_port='', fallback_to_fake=False):
     """ Finds the address of the device.
 
-    If UsbParMarker mode or EVA mode, find the COM port. If a device_name was specified, check that the
+    If UsbParMarker mode or Eva mode, find the COM port. If a device_name was specified, check that the
     serial number matches.
     Throw error if multiple COM candidates are available.
 

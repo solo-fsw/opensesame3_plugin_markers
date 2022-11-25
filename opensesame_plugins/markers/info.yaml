@@ -12,7 +12,7 @@ controls:
     options:
     - "ANY"
     - "UsbParMarker"
-    - "EVA"
+    - "Eva"
     name: "marker_device_widget"
 -
     type: "combobox"

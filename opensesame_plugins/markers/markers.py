@@ -50,8 +50,8 @@ class markers(item):
 	def get_device(self):
 		if self.var.marker_device == u'UsbParMarker':
 			device = 'UsbParMarker'
-		elif self.var.marker_device == u'EVA':
-			device = 'EVA'
+		elif self.var.marker_device == u'Eva':
+			device = 'Eva'
 		elif self.var.marker_device == u'ANY':
 			device = 'ANY'
 		else:
@@ -92,7 +92,6 @@ class markers(item):
 		
 	def is_already_init(self):
 		try:
-			print('try getting hasattr')
 			return hasattr(self.experiment, f"markers_{self.get_tag()}")
 		except:
 			return False
@@ -158,6 +157,7 @@ class markers(item):
 					com_port = info['com_port']
 
 				# Build serial manager:
+				print(device)
 				marker_manager = mark.MarkerManager(device_type=device,
 													device_address=com_port,
 													crash_on_marker_errors=self.get_crash_on_mark_error(),
@@ -178,17 +178,8 @@ class markers(item):
 				marker_manager.set_value(0)
 				self.sleep(pulse_dur)
 
-				# Register cleanup functions:
-				# opensesame.experiment.main_window.tabwidget.open_markdown('mark')
-				# Generate markdown header (text with tab and run info etc.), append it with:
-				# 	MD of summary table, erro table and marker table.
-
-				# Todo: 1 cleanup function
-				self.experiment.cleanup_functions.append(self.reset_value)
-				if self.var.marker_gen_mark_file == u'yes':
-					self.experiment.cleanup_functions.append(self.gen_marker_file)
-				self.experiment.cleanup_functions.append(self.close)
-				self.experiment.cleanup_functions.append(self.show_marker_table)
+				# Add cleanup function:
+				self.experiment.cleanup_functions.append(self.cleanup)
 
 		elif self.get_cur_mode() == "send":
 			
@@ -215,16 +206,27 @@ class markers(item):
 
 		self.set_item_onset()
 
-	def reset_value(self):
+	def cleanup(self):
+
+		# Reset value:
 		self.get_marker_manager().set_value(0)
 		self.sleep(100)
 
-	def gen_marker_file(self):
-		self.get_marker_manager().save_marker_table(self.experiment.experiment_path)
+		# Generate and save marker file
+		if self.var.marker_gen_mark_file == u'yes':
+			self.get_marker_manager().save_marker_table(self.experiment.experiment_path)
 
-	def show_marker_table(self):
+		# Close marker device:
+		self.close()
+
+		# Create tab in which the summary table, error table, and marker table are shown
+		# opensesame.experiment.main_window.tabwidget.open_markdown('mark')
+		# Generate markdown header (text with tab and run info etc.), append it with:
+		# 	MD of summary table, error table and marker table.
 		marker_df, summary_df, error_df = self.get_marker_manager().gen_marker_table()
-		self.experiment.open_markdown()
+		
+		print(vars(self.experiment.experiment.experiment.experiment.experiment))
+		self.experiment.main_window.tabwidget.open_markdown('mark')
 
 
 	def close(self):
