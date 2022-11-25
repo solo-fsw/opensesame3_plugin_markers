@@ -8,7 +8,6 @@ domain.
 from libopensesame.py3compat import *
 from libopensesame.item import item
 from libqtopensesame.items.qtautoplugin import qtautoplugin
-from openexp.canvas import canvas
 from libopensesame.exceptions import osexception
 import serial
 import sys
@@ -224,9 +223,6 @@ class markers(item):
 		# Generate markdown header (text with tab and run info etc.), append it with:
 		# 	MD of summary table, error table and marker table.
 		marker_df, summary_df, error_df = self.get_marker_manager().gen_marker_table()
-		
-		print(vars(self.experiment.experiment.experiment.experiment.experiment))
-		self.experiment.main_window.tabwidget.open_markdown('mark')
 
 
 	def close(self):
@@ -300,6 +296,7 @@ class qtmarkers(markers, qtautoplugin):
 		markers.__init__(self, name, experiment, script)
 		qtautoplugin.__init__(self, __file__)
 
+		self.experiment.cleanup_functions.append(self.qtcleanup)
 
 	def init_edit_widget(self):
 
@@ -314,7 +311,6 @@ class qtmarkers(markers, qtautoplugin):
 		# based on info.json.
 		qtautoplugin.init_edit_widget(self)
 		self.custom_interactions()
-
 
 	def apply_edit_changes(self):
 
@@ -343,7 +339,6 @@ class qtmarkers(markers, qtautoplugin):
 		self.custom_interactions()
 		self.lock = False
 		return w
-
 		
 	def custom_interactions(self):
 
@@ -355,6 +350,7 @@ class qtmarkers(markers, qtautoplugin):
 		cur_mode = self.get_cur_mode()
 		if cur_mode == "init":
 			enable_init = True
+
 		elif cur_mode == "send":
 			enable_init = False
 
@@ -383,3 +379,7 @@ class qtmarkers(markers, qtautoplugin):
 				category = 'warning',
 				timeout = 10000,
 				always_show = True)
+
+	def qtcleanup(self):
+		print(vars(experiment.main_window))
+		self.experiment.main_window.tabwidget.open_markdown('mark')
