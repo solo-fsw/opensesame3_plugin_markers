@@ -7,15 +7,12 @@ Devices:
     Eva
 
 FOR DEV:
-
  > Markers are defined here:
     https://physiodatatoolbox.leidenuniv.nl/docs/user-guide/epochs.html#markers
     https://researchwiki.solo.universiteitleiden.nl/xwiki/wiki/researchwiki.solo.universiteitleiden.nl/view/Hardware/Markers%20and%20Events/
 
-
- Style Guide:
+ > Style Guide:
    http://google.github.io/styleguide/pyguide.html
-
 
 Notes:
     Only Python 3 supported
@@ -40,22 +37,50 @@ from prettytable import PrettyTable
 FAKE_ADDRESS = 'FAKE'
 FAKE_DEVICE = 'FAKE DEVICE'
 
-# Indicate devices here
+# Available devices:
+#   UsbParMarker:
+#       This mode uses the "UsbParMarker" gadget to send markers. The device_address
+#       param must be its COM address (e.g. COM3).
+#   Eva:
+#       This mode uses the "Eva" gadget to send markers. The device_address
+#       param must be its COM address (e.g. COM3).
+#   FAKE_DEVICE:
+#       This mode uses the FAKE_DEVICE
 available_devices = {'UsbParMarker', 'Eva', FAKE_DEVICE}
 
 
 class MarkerManager:
-    """Sends markers to a given device.
+    """ Sends markers to a given device.
 
     An instance of this class is tied to a device, and sends controls and sends markers.
 
-    Available devices:
-        UsbParMarker:
-            This mode uses the "UsbParMarker" gadget to send markers. The device_address
-            param must be its COM address (e.g. COM3).
-        Eva:
-            This mode uses the "Eva" gadget to send markers. The device_address
-            param must be its COM address (e.g. COM3).
+    Attributes:
+        device_type:
+            string of device type, can only contain one of the devices as defined in available_devices
+        device_interface:
+            instantiation of the device interface subclass
+        _time_function_ms:
+            function to get current time in ms
+        _start_time:
+            time of the current MarkerManager instance creation
+        set_value_list:
+            list of all set_value calls which includes the value and time
+        error_list:
+            list of errors that occurred when sending a marker
+        crash_on_marker_errors:
+            bool indicating whether the script should crash when a marker error occurs
+        concurrent_marker_threshold_ms:
+            threshold in ms that triggers the concurrent marker error
+        marker_df:
+            dataframe with all markers (filled when calling gen_marker_table)
+        summary_df:
+            dataframe with summary of the markers (filled when calling gen_marker_table)
+        error_df:
+            dataframe with all marker errors (filled when calling gen_marker_table)
+        _current_value:
+            the current value that is
+        gui:
+            gui for future purposes (for now: gui = None)
 
     """
 
@@ -63,8 +88,21 @@ class MarkerManager:
     marker_manager_instances = []
 
     def __init__(self, device_type, device_address=FAKE_ADDRESS, crash_on_marker_errors=True,
-                 time_function_us=lambda: timing.micros(), **kwargs):
-        """Builds the marker class, and the device interface class used to talk to the device."""
+                 time_function_ms=lambda: timing.millis(), **kwargs):
+        """ Initializes MarkerManager
+
+        Builds the marker class, and the device interface class used to talk to the device.
+
+        Args:
+            device_type:
+            device_address:
+            crash_on_marker_errors:
+            time_function_ms:
+
+        Raises:
+            MarkerManagerError: error when something goes wrong in the MarkerManager
+
+        """
 
         # MarkerManager checks
         try:
@@ -81,24 +119,20 @@ class MarkerManager:
                         err_msg = "class of same type and with same address already exists"
                         raise MarkerManagerError(err_msg)
 
-            # Check device type
             if device_type not in available_devices:
                 err_msg = f"device_type can only be {available_devices}, got: {device_type}"
                 raise MarkerManagerError(err_msg)
 
-            # Check device address
-            if not type(device_address) == str:
+            if not isinstance(device_address, str):
                 err_msg = f"device_address should be str, got {type(device_address)}"
                 raise MarkerManagerError(err_msg)
 
-            # Check report_marker_errors
-            if not type(crash_on_marker_errors == bool):
+            if not isinstance(crash_on_marker_errors, bool):
                 err_msg = f"report_marker_errors should be bool, got {type(crash_on_marker_errors)}"
                 raise MarkerManagerError(err_msg)
 
-            # Check time function
-            if not callable(time_function_us):
-                err_msg = "time_function_us should be function"
+            if not callable(time_function_ms):
+                err_msg = "time_function_ms should be function"
                 raise MarkerManagerError(err_msg)
 
         except MarkerManagerError as e:
@@ -107,19 +141,18 @@ class MarkerManager:
         except Exception as e:
             raise BaseException(f'Unknown error: {e}')
 
-        # Instantiate the correct DeviceInterface subclass
+        # Instantiate the correct DeviceInterface subclass or create general serial device when device is fake
         self.device_type = device_type
         if self.device_type == 'UsbParMarker':
             self.device_interface = UsbParMarker(device_address)
         elif self.device_type == 'Eva':
             self.device_interface = Eva(device_address)
-        # Create general serial device when device is fake
         elif self.device_type == FAKE_DEVICE:
             self.device_interface = SerialDevice(FAKE_ADDRESS)
 
-        # Log timestamp of creation (use GS_Timing microseconds):
-        self._time_function_us = time_function_us
-        self._start_time = time_function_us()
+        # Log attributes
+        self._time_function_ms = time_function_ms
+        self._start_time = time_function_ms()
 
         self.set_value_list = list()
         self.error_list = list()
@@ -130,7 +163,8 @@ class MarkerManager:
         self.summary_df = pandas.DataFrame()
         self.error_df = pandas.DataFrame()
 
-        # Reset marker on init (the marker tracking table assumes that the device has no active markers after init):
+        # Reset marker on init (when creating the marker_df in gen_marker_table it is assumed
+        # that the device has no active markers after init):
         self._current_value = 0
         self.set_value(0)
 
@@ -138,6 +172,7 @@ class MarkerManager:
         # the device props, etc, a table with the markers, etc.
         self.gui = None
 
+        # Append instance of current marker manager
         MarkerManager.marker_manager_instances.append(self)
 
     @property
@@ -177,7 +212,7 @@ class MarkerManager:
         # Check and send marker:
         try:
 
-            # Value should be int (whole number):
+            # Value should be int (i.e. whole number):
             if not whole_number(value):
                 err_msg = "Marker value should be whole number."
                 is_fatal = True
@@ -202,7 +237,7 @@ class MarkerManager:
             if not len(self.set_value_list) == 0:
                 last_start_time = self.set_value_list[-1]['time_us']
                 last_value = self.set_value_list[-1]['value']
-                if (self._time_function_us() - last_start_time) < (self.concurrent_marker_threshold_ms * 1000):
+                if (self._time_function_ms() - last_start_time) < self.concurrent_marker_threshold_ms:
                     err_msg = f"Marker with value {value} was sent within {self.concurrent_marker_threshold_ms} " \
                               f"ms after previous marker with value {last_value}"
                     is_fatal = False
@@ -218,7 +253,7 @@ class MarkerManager:
 
         except MarkerError as e:
             # Save error
-            self.error_list.append({'time_us': self._time_function_us(), 'error': e.message})
+            self.error_list.append({'time_ms': self._time_function_ms(), 'error': e.message})
             if e.is_fatal or self.crash_on_marker_errors:
                 raise e
                 
@@ -229,8 +264,8 @@ class MarkerManager:
         self._current_value = value
 
         # Calculate the marker time relative to the self.start_time, and log the marker:
-        marker_time_us = self._time_function_us()
-        self.set_value_list.append({'value': value, 'time_us': marker_time_us})
+        marker_time_ms = self._time_function_ms()
+        self.set_value_list.append({'value': value, 'time_ms': marker_time_ms})
 
     def send_marker_pulse(self, value, duration_ms=100):
         """Sends a short marker pulse (blocking), and resets to 0 afterwards"""
@@ -310,7 +345,7 @@ class MarkerManager:
         last_value = None
         marker_counter = 0
 
-        df_cols = ['value', 'start_time_us', 'end_time_us', 'duration_us', 'occurrence']
+        df_cols = ['value', 'start_time_ms', 'end_time_ms', 'duration_ms', 'occurrence']
         marker_df = pandas.DataFrame(columns=df_cols)
 
         # Get marker start and end time
@@ -327,8 +362,8 @@ class MarkerManager:
                 if cur_value == 0 and last_value is not None:
 
                     # end marker
-                    cur_marker_end_time = set_value_df.at[index, 'time_us']
-                    marker_df.at[marker_counter, 'end_time_us'] = cur_marker_end_time
+                    cur_marker_end_time_ms = set_value_df.at[index, 'time_ms']
+                    marker_df.at[marker_counter, 'end_time_ms'] = cur_marker_end_time_ms
                     marker_counter = marker_counter + 1
 
                 # Value changed from 0 to non-zero
@@ -336,32 +371,38 @@ class MarkerManager:
 
                     # start marker:
                     cur_marker_value = cur_value
-                    cur_marker_start_time = set_value_df.at[index, 'time_us']
+                    cur_marker_start_time_ms = set_value_df.at[index, 'time_ms']
                     marker_df.at[marker_counter, 'value'] = cur_marker_value
-                    marker_df.at[marker_counter, 'start_time_us'] = cur_marker_start_time
+                    marker_df.at[marker_counter, 'start_time_ms'] = cur_marker_start_time_ms
 
                 # Value changed from non-zero to non-zero
                 elif cur_value != 0 and last_value != 0:
 
                     # end marker:
-                    cur_marker_end_time = set_value_df.at[index, 'time_us']
-                    marker_df.at[marker_counter, 'end_time_us'] = cur_marker_end_time
+                    cur_marker_end_time_ms = set_value_df.at[index, 'time_ms']
+                    marker_df.at[marker_counter, 'end_time_ms'] = cur_marker_end_time_ms
                     marker_counter = marker_counter + 1
 
                     # start marker:
                     cur_marker_value = cur_value
-                    cur_marker_start_time = set_value_df.at[index, 'time_us']
+                    cur_marker_start_time_ms = set_value_df.at[index, 'time_ms']
                     marker_df.at[marker_counter, 'value'] = cur_marker_value
-                    marker_df.at[marker_counter, 'start_time_us'] = cur_marker_start_time
+                    marker_df.at[marker_counter, 'start_time_ms'] = cur_marker_start_time_ms
 
             last_value = cur_value
 
         # When the last marker was a non-zero value, set end time to infinite
-        if pandas.isna(marker_df["end_time_us"].values[-1]):
-            marker_df["end_time_us"].values[-1] = float('inf')
+        if pandas.isna(marker_df["end_time_s"].values[-1]):
+            marker_df["end_time_s"].values[-1] = float('inf')
+
+        # Convert start and end time to seconds:
+        marker_df["end_time_s"] = marker_df["end_time_ms"] / 1000
+        marker_df["start_time_s"] = marker_df["end_time_ms"] / 1000
 
         # Save duration
-        marker_df["duration_us"] = marker_df["end_time_us"] - marker_df["start_time_us"]
+        marker_df["duration_ms"] = marker_df["end_time_ms"] - marker_df["start_time_ms"]
+        # Remove ms columns
+        marker_df.drop(['end_time_ms', 'start_time_ms'], axis=1, inplace=True)
 
         # Save marker occurrences:
         marker_occur_dict = {}
@@ -386,7 +427,7 @@ class MarkerManager:
         return self.marker_df, self.summary_df, self.error_df
 
     def print_marker_table(self):
-        """Prints the marker table, summary table and error table, generated with gen_marker_table."""
+        """Prints marker table, summary table and error table, generated with gen_marker_table."""
 
         # Generate most up-to-date marker table
         self.gen_marker_table()
@@ -419,49 +460,68 @@ class MarkerManager:
         print(summary_table)
         print(marker_table)
 
-    def save_marker_table(self, location=os.getcwd()):
+    def save_marker_table(self, filename="", location=os.getcwd(), more_info=""):
         """Saves the marker table, summary table and error table in one TSV file."""
 
-        # Generate most up-to-date marker table
-        self.gen_marker_table()
+        # Check input
+        if not isinstance(filename, str):
+            err_msg = f'filename should be string, got type {type(filename)}'
+            raise MarkerManagerError(err_msg)
+
+        if more_info != "" and not isinstance(more_info, dict):
+            err_msg = f"more_info should be dict, got {type(more_info)}"
+            raise MarkerManagerError(err_msg)
 
         # Check if location has writing permission
         if not os.access(location, os.W_OK):
             err_msg = f'No writing permissions in {location}. Marker table cannot be saved.'
             raise MarkerManagerError(err_msg)
 
-        else:
+        # Generate most up-to-date marker table
+        self.gen_marker_table()
 
-            # Create filename
-            cur_date_time = datetime.datetime.now()
+        # Get cur date and time
+        cur_date_time = datetime.datetime.now()
+
+        if filename == "":
+            # When no filename has been specified, create filename with date
             date_n = cur_date_time.strftime("%Y%m%d%H%M%S")
             fn = date_n + '_marker_table.tsv'
-            full_fn = location + '\\' + fn
+        else:
+            fn = filename + '_marker_table.tsv'
 
-            # Get date
-            date_str = cur_date_time.strftime("%Y-%m-%d %H:%M:%S")
+        full_fn = location + '\\' + fn
 
-            # Convert data to series
-            self.summary_df.squeeze()
-            self.marker_df.squeeze()
-            self.error_df.squeeze()
+        # Get date
+        date_str = cur_date_time.strftime("%Y-%m-%d %H:%M:%S")
 
-            # Write data to tsv file
-            with open(full_fn, 'w', newline='') as file_out:
-                writer = csv.writer(file_out, delimiter='\t')
-                writer.writerow(['Date: ' + date_str])
-                writer.writerow(['Device: ' + self.device_properties.get('Device')])
-                writer.writerow(['Serialno: ' + self.device_properties.get('Serialno')])
-                writer.writerow(['Version: ' + self.device_properties.get('Version')])
-                writer.writerow('')
-                writer.writerow(self.summary_df.head())
-                writer.writerows(self.summary_df.values)
-                writer.writerow('')
-                writer.writerow(self.marker_df.head())
-                writer.writerows(self.marker_df.values)
-                writer.writerow('')
-                writer.writerow(self.error_df.head())
-                writer.writerows(self.error_df.values)
+        # Convert data to series
+        self.summary_df.squeeze()
+        self.marker_df.squeeze()
+        self.error_df.squeeze()
+
+        # Write data to tsv file
+        with open(full_fn, 'w', newline='') as file_out:
+            writer = csv.writer(file_out, delimiter='\t')
+            writer.writerow(['Date: ' + date_str])
+            writer.writerow(['Device: ' + self.device_properties.get('Device')])
+            writer.writerow(['Serialno: ' + self.device_properties.get('Serialno')])
+            writer.writerow(['Version: ' + self.device_properties.get('Version')])
+            if isinstance(more_info, dict):
+                for key, value in more_info.items():
+                    writer.writerow([key + ': ' + str(value)])
+            writer.writerow('')
+            writer.writerow(['#Summary#'])
+            writer.writerow(self.summary_df.head())
+            writer.writerows(self.summary_df.values)
+            writer.writerow('')
+            writer.writerow(['#Markers#'])
+            writer.writerow(self.marker_df.head())
+            writer.writerows(self.marker_df.values)
+            writer.writerow('')
+            writer.writerow(['#Errors#'])
+            writer.writerow(self.error_df.head())
+            writer.writerows(self.error_df.values)
 
 
 class MarkerError(Exception):
