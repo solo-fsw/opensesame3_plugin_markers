@@ -209,6 +209,8 @@ class MarkerManager:
              If the marker could not be sent to the marker device for whatever reason.
         """
 
+        print('setting value')
+
         # Check and send marker:
         try:
 
@@ -235,8 +237,11 @@ class MarkerManager:
 
             # Two values should be separated by at least the concurrent marker threshold:
             if not len(self.set_value_list) == 0:
-                last_start_time = self.set_value_list[-1]['time_us']
+                print('two values')
+                last_start_time = self.set_value_list[-1]['time_ms']
                 last_value = self.set_value_list[-1]['value']
+                print('value: ' + str(value))
+                print('last value: ' + str(last_value))
                 if (self._time_function_ms() - last_start_time) < self.concurrent_marker_threshold_ms:
                     err_msg = f"Marker with value {value} was sent within {self.concurrent_marker_threshold_ms} " \
                               f"ms after previous marker with value {last_value}"
@@ -245,6 +250,7 @@ class MarkerManager:
 
             # Send marker:
             try:
+                print('setting actual value')
                 self.device_interface._set_value(value)
             except Exception as e:
                 err_msg = f"Could not send marker: {e}."
@@ -260,12 +266,18 @@ class MarkerManager:
         except Exception as e:
             raise BaseException(f'Unknown error: {e}')
 
+        print('checks ok')
+
         # Save marker value
         self._current_value = value
+
+        print('save ok')
 
         # Calculate the marker time relative to the self.start_time, and log the marker:
         marker_time_ms = self._time_function_ms()
         self.set_value_list.append({'value': value, 'time_ms': marker_time_ms})
+
+        print('set value done')
 
     def send_marker_pulse(self, value, duration_ms=100):
         """Sends a short marker pulse (blocking), and resets to 0 afterwards"""
@@ -779,11 +791,15 @@ class Eva(SerialDevice):
 
 
 def whole_number(value):
-    if isinstance(value, int) or \
-            (isinstance(value, float) and value.is_integer()):
-        return True
-    else:
-        return False
+    try:
+        if isinstance(value, int) or \
+                (isinstance(value, float) and value.is_integer()):
+            return True
+        else:
+            return False
+
+    except:
+        raise(MarkerManagerError('error whole number'))
 
 
 # Helper functions:

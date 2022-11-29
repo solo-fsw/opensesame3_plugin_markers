@@ -13,6 +13,7 @@ import serial
 import sys
 import re
 import os
+import pandas
 
 import marker_management as mark
 
@@ -141,6 +142,8 @@ class markers(item):
 		
 		if self.get_cur_mode() == "init":
 
+			print('start init')
+
 			if self.is_already_init():
 				# Raise error since you cannot init twice.
 				raise osexception("Marker device already initialized.")
@@ -156,12 +159,12 @@ class markers(item):
 					com_port = info['com_port']
 
 				# Build serial manager:
-				print(device)
 				marker_manager = mark.MarkerManager(device_type=device,
 													device_address=com_port,
 													crash_on_marker_errors=self.get_crash_on_mark_error(),
-													time_function_us=lambda: self.time() * 1000)
+													time_function_ms=lambda: self.time())
 				self.set_marker_manager(marker_manager)
+				print('marker manager built')
 
 				# Flash 255
 				pulse_dur = 100
@@ -175,10 +178,15 @@ class markers(item):
 
 				# Reset:
 				marker_manager.set_value(0)
+				print('set value ok')
 				self.sleep(pulse_dur)
+
+				print('reset ok')
 
 				# Add cleanup function:
 				self.experiment.cleanup_functions.append(self.cleanup)
+
+				print('end init')
 
 		elif self.get_cur_mode() == "send":
 			
@@ -207,6 +215,8 @@ class markers(item):
 
 	def cleanup(self):
 
+		print('cleanup in progress')
+
 		# Reset value:
 		self.get_marker_manager().set_value(0)
 		self.sleep(100)
@@ -218,12 +228,11 @@ class markers(item):
 		# Close marker device:
 		self.close()
 
-		# Create tab in which the summary table, error table, and marker table are shown
-		# opensesame.experiment.main_window.tabwidget.open_markdown('mark')
-		# Generate markdown header (text with tab and run info etc.), append it with:
-		# 	MD of summary table, error table and marker table.
+		# Get marker tables and save in var
 		marker_df, summary_df, error_df = self.get_marker_manager().gen_marker_table()
-
+		self.var.marker_df = marker_df
+		self.var.summary_df = summary_df
+		self.var.error_df = error_df
 
 	def close(self):
 
@@ -380,6 +389,3 @@ class qtmarkers(markers, qtautoplugin):
 				timeout = 10000,
 				always_show = True)
 
-	def qtcleanup(self):
-		print(vars(experiment.main_window))
-		self.experiment.main_window.tabwidget.open_markdown('mark')
