@@ -21,7 +21,7 @@ Notes:
 """
 
 from abc import ABC, abstractmethod
-import utils.GS_timing as timing
+import GS_timing as timing
 import serial
 import datetime
 import json
