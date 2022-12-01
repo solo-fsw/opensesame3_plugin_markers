@@ -20,6 +20,19 @@ Notes:
 
 """
 
+# Todo:
+# - Check if libraries exist in OS installation (non-megapack), if not replace them with included libraries or
+#   native libraries.
+# - Evaluate renaming serial device descriptor in Arduino IDE.
+# - Add fake behavior.
+# - LUXURY: Evaluate browser based updating of devices.
+# - Check set_bit LSB, MSB
+# - Add assert in gen marker table for assumption first value is 0
+# - cur time in gen marker table
+# - singular time in set_value and add value in marker error message
+# - do not save tables in self, instead return only, edit print_marker_table and save_marker_table accordingly
+# - sendcommand should include everything, close if necessary, open in command, send command, close, reopen in data mode
+
 from abc import ABC, abstractmethod
 import GS_timing as timing
 import serial
@@ -31,7 +44,6 @@ import sys
 import os
 import csv
 from serial.tools.list_ports import comports
-from prettytable import PrettyTable
 
 # Address string indicating that the device is being faked/spoofed:
 FAKE_ADDRESS = 'FAKE'
@@ -266,7 +278,7 @@ class MarkerManager:
         # Save marker value
         self._current_value = value
 
-        # Calculate the marker time relative to the self.start_time, and log the marker:
+        # Log the marker:
         marker_time_ms = self._time_function_ms()
         self.set_value_list.append({'value': value, 'time_ms': marker_time_ms})
 
@@ -285,7 +297,7 @@ class MarkerManager:
         """
 
         # Check that bits consist of string with 8 chars:
-        if not type(bits) == str and len(bits) != 8:
+        if type(bits) != str or len(bits) != 8:
             err_msg = "bits should be str containing characters"
             raise MarkerManagerError(err_msg)
 
@@ -303,7 +315,7 @@ class MarkerManager:
         """Toggles a single bit, while leaving other bits intact.
 
         Args:
-            bit: the bit that should be toggled (0 - 7) 0 is MSB?
+            bit: the bit that should be toggled (0 - 7) -> 0 is LSB
             state: 'on' or 'off'
         """
 
@@ -431,6 +443,9 @@ class MarkerManager:
     def print_marker_table(self):
         """Prints marker table, summary table and error table, generated with gen_marker_table."""
 
+        # Import pretty table when necessary:
+        from prettytable import PrettyTable
+
         # Generate most up-to-date marker table
         self.gen_marker_table()
 
@@ -498,7 +513,7 @@ class MarkerManager:
             date_n = cur_date_time.strftime("%Y%m%d%H%M%S")
             fn = date_n + '_marker_table.tsv'
         else:
-            fn = filename + '_marker_table.tsv'
+            fn = filename + '.tsv'
 
         full_fn = location + '\\' + fn
 
@@ -573,7 +588,7 @@ class DeviceInterface(ABC):
     Note, the subclass constructors must throw errors if the specified parameters cannot be resolved.
     E.g., no device with the specified address exist, or it it is not of the expected type.
     """
-    
+
     @property
     @abstractmethod
     def device_address(self):
@@ -665,13 +680,15 @@ class SerialDevice(DeviceInterface):
 
     def _set_value(self, value):
         """Sets the value of the serial device."""
-        if not self._device_address == FAKE_ADDRESS:
+        if self.is_fake:
+            pass
+        else:
             value_byte = value.to_bytes(1, 'big')
             self.serial_device.write(value_byte)
 
     def _close(self):
         """Closes the serial connection."""
-        if not self._device_address == FAKE_ADDRESS:
+        if not self.is_fake:
             self.serial_device.close()
 
     def command_mode(self):
@@ -800,12 +817,8 @@ class Eva(SerialDevice):
 def whole_number(value):
     """Evaluate whether value is whole number."""
     try:
-        if isinstance(value, int) or \
-                (isinstance(value, float) and value.is_integer()):
-            return True
-        else:
-            return False
-
+        return isinstance(value, int) or \
+                (isinstance(value, float) and value.is_integer())
     except:
         raise(MarkerManagerError('error whole number'))
 
