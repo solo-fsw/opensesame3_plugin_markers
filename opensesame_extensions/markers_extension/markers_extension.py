@@ -13,7 +13,6 @@ from libopensesame import misc
 from libqtopensesame.misc.translate import translation_context
 import markdown
 import pandas
-_ = translation_context(u'after_experiment', category=u'extension')
 
 
 class markers_extension(base_extension):
@@ -23,7 +22,7 @@ class markers_extension(base_extension):
 		Shows notifications after an experiment has finished.
 	"""
 
-	def event_end_experiment(self):
+	def event_end_experiment(self, ret_val):
 
 		"""
 		desc:
@@ -35,7 +34,10 @@ class markers_extension(base_extension):
 				type:	[Exception, NoneType]
 		"""
 
-		self.print_markers()
+		if ret_val is None:
+			self.print_markers()
+		else:
+			self.print_markers()
 
 	def print_markers(self):
 
