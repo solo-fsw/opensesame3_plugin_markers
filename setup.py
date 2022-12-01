@@ -33,7 +33,7 @@ def data_files():
 		("share/opensesame_plugins/markers",
 			files("opensesame_plugins/markers/*")),
 		("share/opensesame_extensions/markers",
-		 	files("opensesame_extensions/markers/*"))
+		 	files("opensesame_extensions/markers_extension/*"))
 	]
 
 
