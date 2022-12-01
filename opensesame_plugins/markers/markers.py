@@ -305,8 +305,6 @@ class qtmarkers(markers, qtautoplugin):
 		markers.__init__(self, name, experiment, script)
 		qtautoplugin.__init__(self, __file__)
 
-		self.experiment.cleanup_functions.append(self.qtcleanup)
-
 	def init_edit_widget(self):
 
 		"""

@@ -404,8 +404,8 @@ class MarkerManager:
             last_value = cur_value
 
         # When the last marker was a non-zero value, set end time to infinite
-        if pandas.isna(marker_df["end_time_s"].values[-1]):
-            marker_df["end_time_s"].values[-1] = float('inf')
+        if pandas.isna(marker_df["end_time_ms"].values[-1]):
+            marker_df["end_time_ms"].values[-1] = float('inf')
 
         # Convert start and end time to seconds:
         marker_df["end_time_s"] = marker_df["end_time_ms"] / 1000

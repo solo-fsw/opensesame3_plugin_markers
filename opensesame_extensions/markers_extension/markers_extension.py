@@ -23,7 +23,7 @@ class markers_extension(base_extension):
 		Shows notifications after an experiment has finished.
 	"""
 
-	def event_end_experiment(self, ret_val):
+	def event_end_experiment(self):
 
 		"""
 		desc:
@@ -35,8 +35,7 @@ class markers_extension(base_extension):
 				type:	[Exception, NoneType]
 		"""
 
-		if ret_val is None:
-			self.print_markers()
+		self.print_markers()
 
 	def print_markers(self):
 
