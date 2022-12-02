@@ -39,38 +39,6 @@ class markers_extension(base_extension):
 		else:
 			self.print_markers()
 
-	@property
-	def _summary_df(self):
-
-		"""
-		returns:
-			desc:	The summary data frame of the last run, or None if this
-					could not be determined.
-			type:	[df, NoneType]
-		"""
-
-		# Depending on the runner, the logfile is either a property of the
-		# var object ...
-		var = self.extension_manager.provide(
-			'jupyter_workspace_variable',
-			name='var'
-		)
-		try:
-			if var and 'summary_df' in var:
-				return var.summary_df
-		except TypeError:
-			# JupyterConsole returns a custom FailedToGetWorkspaceVariable
-			# Exception when an error occurs. This is not iterable and results
-			# in a TypeError.
-			pass
-		# ... or it is a global variable in the workspace
-		summary_df = self.extension_manager.provide(
-			'jupyter_workspace_variable',
-			name='summary_df'
-		)
-		if summary_df:
-			return summary_df
-
 	def print_markers(self):
 
 		"""
@@ -78,18 +46,59 @@ class markers_extension(base_extension):
 			Shows a summary after successful completion of the experiment.
 		"""
 
-		summary_df = self._summary_df
-
-		if summary_df is None:
-			summary_df = u'Unknown summary_df'
-
+		# init markdown
 		md = ''
-		md += u'\n' + \
-			  _(u'***Summary table:***') + u'\n\n'
-		md += _(u'value | occurrences') + u'\n'
-		md += _(u'---|---') + u'\n'
-		md += _(u'1 | 1') + u'\n'
-		md += _(u'2 | 1') + u'\n'
-		md += u'\n\n\n'
+
+		var = self.extension_manager.provide(
+			'jupyter_workspace_variable',
+			name='var'
+		)
+
+		summary_df = var.summary_df
+		marker_df = var.marker_df
+		error_df = var.error_df
+
+		# Add summary table to md
+		md = add_table_to_md(md, summary_df, 'Summary table')
+
+		# # Add marker table to md
+		marker_df = marker_df.round(decimals=3)
+		md = add_table_to_md(md, marker_df, 'Marker table')
+
+		# Add error table to md
+		md = add_table_to_md(md, error_df, 'Error table')
+
 		self.tabwidget.open_markdown(md, u'os-finished-success', _(u'Marker tables'))
 
+
+def add_table_to_md(md, df, table_title):
+	md += _(u'***' + table_title + ':***') + u'\n\n'
+
+	ncols = len(df.columns)
+
+	# Column headers
+	md += _(u'| ')
+	for column in df:
+		md += column + _(u' | ')
+	md += u'\n'
+
+	# Header separator
+	md += _(u'|')
+	for col in range(ncols):
+		md += _(u'---|')
+	md += u'\n'
+
+	# Values
+	md += _(u'| ')
+	for index, row in df.iterrows():
+		for column in df:
+			cur_value = row[column]
+			if isinstance(cur_value, float):
+				cur_value = round(cur_value, 3)
+			md += str(cur_value) + _(u' | ')
+
+		md += u'\n'
+
+	md += u'\n\n'
+
+	return md
