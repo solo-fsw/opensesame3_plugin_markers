@@ -22,7 +22,7 @@ Notes:
 
 # Todo:
 # - Check if libraries exist in OS installation (non-megapack), if not replace them with included libraries or
-#   native libraries.
+#   native libraries. https://osdoc.cogsci.nl/3.3/notes/3312/
 # - Evaluate renaming serial device descriptor in Arduino IDE.
 # - Add fake behavior.
 # - LUXURY: Evaluate browser based updating of devices.
@@ -177,6 +177,7 @@ class MarkerManager:
         # that the device has no active markers after init):
         self._current_value = 0
         self.set_value(0)
+        timing.delay(100)
 
         # In the future, add an optional Tkinter always-on-top GUI that shows the current marker value, the bit states,
         # the device props, etc, a table with the markers, etc.
@@ -238,6 +239,14 @@ class MarkerManager:
                 is_fatal = True
                 raise MarkerError(err_msg, is_fatal)
 
+            # Send marker:
+            try:
+                self.device_interface._set_value(value)
+            except Exception as e:
+                err_msg = f"Could not send marker: {e}."
+                is_fatal = False
+                raise MarkerError(err_msg, is_fatal)
+
             # The same value should not be sent twice (except 0, that doesn't matter):
             if not len(self.set_value_list) == 0 and not value == 0:
                 last_value = self.set_value_list[-1]['value']
@@ -257,14 +266,6 @@ class MarkerManager:
                                   f"ms after previous marker with value {last_value}"
                         is_fatal = False
                         raise MarkerError(err_msg, is_fatal)
-
-            # Send marker:
-            try:
-                self.device_interface._set_value(value)
-            except Exception as e:
-                err_msg = f"Could not send marker: {e}."
-                is_fatal = False
-                raise MarkerError(err_msg, is_fatal)
 
         except MarkerError as e:
             # Save error
@@ -410,8 +411,8 @@ class MarkerManager:
             marker_df["end_time_ms"].values[-1] = float('inf')
 
         # Convert start and end time to seconds:
+        marker_df["start_time_s"] = marker_df["start_time_ms"] / 1000
         marker_df["end_time_s"] = marker_df["end_time_ms"] / 1000
-        marker_df["start_time_s"] = marker_df["end_time_ms"] / 1000
 
         # Save duration
         marker_df["duration_ms"] = marker_df["end_time_ms"] - marker_df["start_time_ms"]
@@ -619,7 +620,7 @@ class DeviceInterface(ABC):
     @property
     def is_fake(self):
         """Returns a bool indication if the device is faked."""
-        return self.device_address == FAKE_ADDRESS
+        return self.device_address() == FAKE_ADDRESS
 
 
 class SerialDevice(DeviceInterface):
@@ -666,7 +667,7 @@ class SerialDevice(DeviceInterface):
         else:
             properties = {"Version": "0000000",
                           "Serialno": "0000000",
-                          "Device": "FAKE device"}
+                          "Device": FAKE_DEVICE}
 
         self._device_properties = properties
 
