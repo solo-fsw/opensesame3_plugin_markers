@@ -48,6 +48,8 @@ class markers_extension(base_extension):
 
 		# init markdown
 		md = ''
+		md += u'#Marker tables\n'
+		md += u'time: ' + str(time.ctime()) + u'\n\n'
 
 		var = self.extension_manager.provide(
 			'jupyter_workspace_variable',
@@ -72,30 +74,30 @@ class markers_extension(base_extension):
 
 
 def add_table_to_md(md, df, table_title):
-	md += _(u'***' + table_title + ':***') + u'\n\n'
+	md += u'##' + table_title + u':##' + u'\n'
 
 	ncols = len(df.columns)
 
 	# Column headers
-	md += _(u'| ')
+	md += u'| '
 	for column in df:
-		md += column + _(u' | ')
+		md += column + u' | '
 	md += u'\n'
 
 	# Header separator
-	md += _(u'|')
+	md += u'|'
 	for col in range(ncols):
-		md += _(u'---|')
+		md += u'---|'
 	md += u'\n'
 
 	# Values
-	md += _(u'| ')
+	md += u'| '
 	for index, row in df.iterrows():
 		for column in df:
 			cur_value = row[column]
 			if isinstance(cur_value, float):
 				cur_value = round(cur_value, 3)
-			md += str(cur_value) + _(u' | ')
+			md += str(cur_value) + u' | '
 
 		md += u'\n'
 
