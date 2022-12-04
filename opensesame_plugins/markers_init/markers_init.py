@@ -18,11 +18,11 @@ import pandas
 import marker_management as mark
 
 
-class markers(item):
+class markers_init(item):
     """
-	This class (the class with the same name as the module) handles the basic
-	functionality of the item. It does not deal with GUI stuff.
-	"""
+    This class (the class with the same name as the module) handles the basic
+    functionality of the item. It does not deal with GUI stuff.
+    """
 
     # Provide an informative description for your plug-in.
     description = u'Handles communication with Leiden Univ marker devices'
@@ -30,17 +30,13 @@ class markers(item):
     def reset(self):
 
         """
-		desc:
-			Resets plug-in to initial values.
-		"""
+        desc:
+            Resets plug-in to initial values.
+        """
         self.var.marker_device = u'ANY'
-        self.var.marker_mode = u'Send marker'
         self.var.marker_device_addr = u'ANY'
         self.var.marker_device_serial = u'ANY'
         self.var.marker_device_tag = u'marker_device_1'
-        self.var.marker_value = 0
-        self.var.marker_object_duration = 0
-        self.var.marker_reset_to_zero = 'no'
         self.var.marker_crash_on_mark_errors = u'yes'
         self.var.marker_dummy_mode = 'no'
         self.var.marker_gen_mark_file = u'no'
@@ -56,15 +52,6 @@ class markers(item):
         else:
             raise osexception(u'INTERNAL ERROR')
         return device
-
-    def get_cur_mode(self):
-        if self.var.marker_mode == u'Send marker':
-            mode = 'send'
-        elif self.var.marker_mode == u'Initialize':
-            mode = 'init'
-        else:
-            raise osexception(u'INTERNAL ERROR')
-        return mode
 
     def get_addr(self):
         return self.var.marker_device_addr
@@ -108,101 +95,59 @@ class markers(item):
     def prepare(self):
 
         """
-		desc:
-			Prepare phase.
-		"""
+        desc:
+            Prepare phase.
+        """
 
         # Call the parent constructor.
         item.prepare(self)
 
-        if self.get_cur_mode() == "init":
-            # Do noting in prepare when in init mode.
-            pass
-        elif self.get_cur_mode() == "send":
-            # Do noting in prepare when in send mode.
-            pass
-        else:
-            raise osexception("Internal mode error.")
-
     def run(self):
 
         """
-		desc:
-			Run phase.
-		"""
+        desc:
+            Run phase.
+        """
 
-        if self.get_cur_mode() == "init":
-
-            if self.is_already_init():
-                # Raise error since you cannot init twice.
-                raise osexception("Marker device already initialized.")
+        if self.is_already_init():
+            # Raise error since you cannot init twice.
+            raise osexception("Marker device already initialized.")
+        else:
+            # Set Fake device in dummy mode
+            if self.get_dummy_mode():
+                com_port = 'FAKE'
+                device = 'FAKE DEVICE'
             else:
-                # Set Fake device in dummy mode
-                if self.get_dummy_mode():
-                    com_port = 'FAKE'
-                    device = 'FAKE DEVICE'
-                else:
-                    # Resolve device:
-                    info = self.resolve_com_port()
-                    device = info['device']['Device']
-                    com_port = info['com_port']
+                # Resolve device:
+                info = self.resolve_com_port()
+                device = info['device']['Device']
+                com_port = info['com_port']
 
-                # Build serial manager:
-                print(device)
-                marker_manager = mark.MarkerManager(device_type=device,
-                                                    device_address=com_port,
-                                                    crash_on_marker_errors=self.get_crash_on_mark_error(),
-                                                    time_function_ms=lambda: self.time())
-                self.set_marker_manager(marker_manager)
+            # Build serial manager:
+            marker_manager = mark.MarkerManager(device_type=device,
+                                                device_address=com_port,
+                                                crash_on_marker_errors=self.get_crash_on_mark_error(),
+                                                time_function_ms=lambda: self.time())
+            self.set_marker_manager(marker_manager)
 
-                # Flash 255
-                pulse_dur = 100
-                if self.var.marker_flash_255 == 'yes':
-                    marker_manager.set_value(255)
-                    self.sleep(pulse_dur)
-                    marker_manager.set_value(0)
-                    self.sleep(pulse_dur)
-                    marker_manager.set_value(255)
-                    self.sleep(pulse_dur)
-
-                # Reset:
+            # Flash 255
+            pulse_dur = 100
+            if self.var.marker_flash_255 == 'yes':
+                marker_manager.set_value(255)
+                self.sleep(pulse_dur)
                 marker_manager.set_value(0)
                 self.sleep(pulse_dur)
+                marker_manager.set_value(255)
+                self.sleep(pulse_dur)
 
-                # Add cleanup function:
-                self.experiment.cleanup_functions.append(self.cleanup)
+            # Reset:
+            marker_manager.set_value(0)
+            self.sleep(pulse_dur)
 
-        elif self.get_cur_mode() == "send":
+            # Add cleanup function:
+            self.experiment.cleanup_functions.append(self.cleanup)
 
-            # Check if initialized:
-            if not self.is_already_init():
-                raise osexception("You must have a marker object in initialize mode before sending markers.")
-
-            # Send marker:
-            try:
-                self.get_marker_manager().set_value(int(self.var.marker_value))
-            except:
-                raise osexception(f"Error sending marker: {sys.exc_info()[1]}")
-
-            # Sleep for object duration (blocking)
-            self.sleep(int(self.var.marker_object_duration))
-
-            # Reset marker value to zero, if specified:
-            if self.var.marker_object_duration > 5 and self.var.marker_reset_to_zero == 'yes':
-
-                try:
-                    self.get_marker_manager().set_value(0)
-                except:
-                    raise osexception(f"Error sending marker: {sys.exc_info()[1]}")
-
-            # Get marker tables and save in var
-            marker_df, summary_df, error_df = self.get_marker_manager().gen_marker_table()
-            self.experiment.var.marker_df = marker_df
-            self.experiment.var.summary_df = summary_df
-            self.experiment.var.error_df = error_df
-            self.experiment.var.test_var = 'test'
-
-        self.set_item_onset()
+            self.set_item_onset()
 
     def cleanup(self):
 
@@ -228,9 +173,9 @@ class markers(item):
     def close(self):
 
         """
-		desc:
-			Closes the serial connection.
-		"""
+        desc:
+            Closes the serial connection.
+        """
 
         try:
             self.get_marker_manager().close()
@@ -271,38 +216,38 @@ class markers(item):
         return device_info
 
 
-class qtmarkers(markers, qtautoplugin):
+class qtmarkers_init(markers_init, qtautoplugin):
     """
-	This class handles the GUI aspect of the plug-in. By using qtautoplugin, we
-	usually need to do hardly anything, because the GUI is defined in info.json.
-	"""
+    This class handles the GUI aspect of the plug-in. By using qtautoplugin, we
+    usually need to do hardly anything, because the GUI is defined in info.json.
+    """
 
     def __init__(self, name, experiment, script=None):
 
         """
-		Constructor.
+        Constructor.
 
-		Arguments:
-		name		--	The name of the plug-in.
-		experiment	--	The experiment object.
+        Arguments:
+        name		--	The name of the plug-in.
+        experiment	--	The experiment object.
 
-		Keyword arguments:
-		script		--	A definition script. (default=None)
-		"""
+        Keyword arguments:
+        script		--	A definition script. (default=None)
+        """
 
         # We don't need to do anything here, except call the parent
         # constructors.
-        markers.__init__(self, name, experiment, script)
+        markers_init.__init__(self, name, experiment, script)
         qtautoplugin.__init__(self, __file__)
 
     def init_edit_widget(self):
 
         """
-		Constructs the GUI controls. Usually, you can omit this function
-		altogether, but if you want to implement more advanced functionality,
-		such as controls that are grayed out under certain conditions, you need
-		to implement this here.
-		"""
+        Constructs the GUI controls. Usually, you can omit this function
+        altogether, but if you want to implement more advanced functionality,
+        such as controls that are grayed out under certain conditions, you need
+        to implement this here.
+        """
 
         # First, call the parent constructor, which constructs the GUI controls
         # based on info.json.
@@ -312,9 +257,9 @@ class qtmarkers(markers, qtautoplugin):
     def apply_edit_changes(self):
 
         """
-		desc:
-			Applies the controls.
-		"""
+        desc:
+            Applies the controls.
+        """
 
         if not qtautoplugin.apply_edit_changes(self) or self.lock:
             return False
@@ -323,11 +268,11 @@ class qtmarkers(markers, qtautoplugin):
     def edit_widget(self):
 
         """
-		Refreshes the controls.
+        Refreshes the controls.
 
-		Returns:
-		The QWidget containing the controls
-		"""
+        Returns:
+        The QWidget containing the controls
+        """
 
         if self.lock:
             return
@@ -340,38 +285,14 @@ class qtmarkers(markers, qtautoplugin):
     def custom_interactions(self):
 
         """
-		desc:
-			Activates the relevant controls for each setting.
-		"""
-
-        cur_mode = self.get_cur_mode()
-        if cur_mode == "init":
-            enable_init = True
-
-        elif cur_mode == "send":
-            enable_init = False
-
-        self.marker_device_widget.setEnabled(True)
-        self.marker_mode_widget.setEnabled(True)
-
-        self.marker_device_addr_widget.setEnabled(enable_init)
-        self.marker_device_serial_widget.setEnabled(enable_init)
-        self.marker_device_tag_widget.setEnabled(True)
-
-
-        self.marker_object_duration_widget.setEnabled(not enable_init)
-        self.marker_reset_to_zero_widget.setEnabled(not enable_init)
-
-
-        self.marker_dummy_mode_widget.setEnabled(enable_init)
-        self.marker_gen_mark_file_widget.setEnabled(enable_init)
-        self.marker_flash_255_widget.setEnabled(enable_init)
+        desc:
+            Activates the relevant controls for each setting.
+        """
 
         device_tag = self.get_tag()
-
         if re.search(r"\s", device_tag) is not None:
             self.extension_manager.fire('notify',
-                                        message='<strong>Warning</strong>: The Device tag name must not include spaces',
+                                        message='<strong>Warning</strong>: The Device tag name should not include spaces',
                                         category='warning',
                                         timeout=10000,
                                         always_show=True)
