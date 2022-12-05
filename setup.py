@@ -30,8 +30,10 @@ def data_files():
 
 	# Return the target folders and their respective data files:
 	return [
-		("share/opensesame_plugins/markers",
-			files("opensesame_plugins/markers/*")),
+		("share/opensesame_plugins/markers_send",
+			files("opensesame_plugins/markers_send/*")),
+		("share/opensesame_plugins/markers_init",
+		 files("opensesame_plugins/markers_init/*")),
 		("share/opensesame_extensions/markers_extension",
 		 	files("opensesame_extensions/markers_extension/*"))
 	]

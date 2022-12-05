@@ -10,7 +10,7 @@ controls:
     var: "marker_device_tag"
     label: "Device tag"
     name: "marker_device_tag_widget"
-    info: "Enter a tag (name) to give the marker device. This can be anything. Do not include spaces."
+    info: "Enter a tag (name) to give the marker device (do not include spaces)."
 -
     type: "combobox"
     var: "marker_device"
@@ -20,6 +20,7 @@ controls:
     - "UsbParMarker"
     - "Eva"
     name: "marker_device_widget"
+    info: "The marker device type. 'ANY' will search for any device available"
 -
     type: "line_edit"
     var: "marker_device_addr"
@@ -37,22 +38,22 @@ controls:
     var: "marker_crash_on_mark_errors"
     label: "Crash on marker errors."
     name: "marker_crash_on_mark_errors_widget"
-    info: "If checked, the task will crash when one of the following marker errors occurs: marker too short, same marker value twice, marker could not be sent to marker device."
+    info: "When checked, the task will crash when one of the following marker errors occurs: marker too short, same marker value twice, marker could not be sent to marker device."
 -
     type: "checkbox"
     var: "marker_dummy_mode"
     label: "Dummy mode."
     name: "marker_dummy_mode_widget"
-    info: "If checked, dummy mode will be used (no marker device needs to be connected, use for development)."
+    info: "When checked, dummy mode will be used (no marker device needs to be connected, use for development)."
 -
     type: "checkbox"
     var: "marker_gen_mark_file"
     label: "Generate marker file."
     name: "marker_gen_mark_file_widget"
-    info: "If checked, a tsv file will be created containing a marker table, marker summary and errors."
+    info: "When checked, a tsv file will be created containing a marker table, marker summary and errors."
 -
     type: "checkbox"
     var: "marker_flash_255"
     label: "Flash 255."
     name: "marker_flash_255_widget"
-    info: "If checked, two pulses with a value of 255 will be sent on initialization."
+    info: "When checked, two pulses with a value of 255 will be sent on initialization."

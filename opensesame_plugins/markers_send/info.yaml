@@ -10,7 +10,7 @@ controls:
     var: "marker_device_tag"
     label: "Device tag"
     name: "marker_device_tag_widget"
-    info: "Enter a tag (name) to give the marker device. This can be anything. Do not include spaces."
+    info: "Enter a tag (name) to give the marker device (do not include spaces). Make sure a device with the same tag is initialized."
 -
     type: "line_edit"
     var: "marker_value"
@@ -28,4 +28,4 @@ controls:
     var: "marker_reset_to_zero"
     label: "Reset marker value to zero"
     name: "marker_reset_to_zero_widget"
-    info: "If checked, the marker value will reset to zero after the duration of the object (duration must be > 5 ms)"
+    info: "When checked, the marker value will reset to zero after the Object duration (duration must be > 5 ms)"
