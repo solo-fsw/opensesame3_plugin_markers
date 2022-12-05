@@ -84,7 +84,8 @@ class markers_send(item):
 
         # Check if initialized:
         if not self.is_already_init():
-            raise osexception("You must have a marker object in initialize mode before sending markers.")
+            raise osexception("You must have a marker object in initialize mode before sending markers."
+                              "Make sure the Device tags match.")
 
         # Send marker:
         try:
