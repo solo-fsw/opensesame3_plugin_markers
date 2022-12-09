@@ -27,19 +27,22 @@ class markers_init(item):
     # Provide an informative description for your plug-in.
     description = u'Handles communication with Leiden Univ marker devices'
 
+    version = 0.1
+
     def reset(self):
 
         """
         desc:
             Resets plug-in to initial values.
         """
+        self.var.marker_device_tag = u'marker_device_1'
         self.var.marker_device = u'ANY'
         self.var.marker_device_addr = u'ANY'
         self.var.marker_device_serial = u'ANY'
-        self.var.marker_device_tag = u'marker_device_1'
+
         self.var.marker_crash_on_mark_errors = u'yes'
-        self.var.marker_dummy_mode = 'no'
-        self.var.marker_gen_mark_file = u'no'
+        self.var.marker_dummy_mode = u'no'
+        self.var.marker_gen_mark_file = u'yes'
         self.var.marker_flash_255 = u'no'
 
     def get_device(self):
@@ -83,21 +86,28 @@ class markers_init(item):
     def set_marker_manager(self, mark_man):
         setattr(self.experiment, f"markers_{self.get_tag()}", mark_man)
 
-    def get_init_vars(self):
-        if self.is_already_init():
-            return getattr(self.experiment, f"markers_vars_{self.get_tag()}")
-        else:
-            return None
-
-    def set_init_vars(self, init_vars):
-        setattr(self.experiment, f"marker_vars_{self.get_tag()}", init_vars)
-
     def prepare(self):
 
         """
         desc:
             Prepare phase.
         """
+
+        # Check input of plugin:
+
+        device_tag = self.get_tag()
+        if not(bool(re.match("^[A-Za-z0-9_-]*$", device_tag)) and bool(re.match("^[A-Za-z]*$", device_tag[0]))):
+            # Raise error, tag can only contain: letters, numbers, underscores and dashes and should start with letter.
+            raise osexception("Device tag can only contain letters, numbers, underscores and dashes "
+                              "and should start with a letter.")
+
+        device_address = self.get_addr()
+        if device_address != u'ANY' and re.match("^COM\d{1,3}", device_address) is None:
+            raise osexception("Incorrect marker device address address:")
+
+        if self.is_already_init():
+            # Raise error since you cannot init twice.
+            raise osexception("Marker device already initialized.")
 
         # Call the parent constructor.
         item.prepare(self)
@@ -109,45 +119,41 @@ class markers_init(item):
             Run phase.
         """
 
-        if self.is_already_init():
-            # Raise error since you cannot init twice.
-            raise osexception("Marker device already initialized.")
+        # Set Fake device in dummy mode
+        if self.get_dummy_mode():
+            com_port = 'FAKE'
+            device = 'FAKE DEVICE'
         else:
-            # Set Fake device in dummy mode
-            if self.get_dummy_mode():
-                com_port = 'FAKE'
-                device = 'FAKE DEVICE'
-            else:
-                # Resolve device:
-                info = self.resolve_com_port()
-                device = info['device']['Device']
-                com_port = info['com_port']
+            # Resolve device:
+            info = self.resolve_com_port()
+            device = info['device']['Device']
+            com_port = info['com_port']
 
-            # Build serial manager:
-            marker_manager = mark.MarkerManager(device_type=device,
-                                                device_address=com_port,
-                                                crash_on_marker_errors=self.get_crash_on_mark_error(),
-                                                time_function_ms=lambda: self.time())
-            self.set_marker_manager(marker_manager)
+        # Build serial manager:
+        marker_manager = mark.MarkerManager(device_type=device,
+                                            device_address=com_port,
+                                            crash_on_marker_errors=self.get_crash_on_mark_error(),
+                                            time_function_ms=lambda: self.time())
+        self.set_marker_manager(marker_manager)
 
-            # Flash 255
-            pulse_dur = 100
-            if self.var.marker_flash_255 == 'yes':
-                marker_manager.set_value(255)
-                self.sleep(pulse_dur)
-                marker_manager.set_value(0)
-                self.sleep(pulse_dur)
-                marker_manager.set_value(255)
-                self.sleep(pulse_dur)
-
-            # Reset:
+        # Flash 255
+        pulse_dur = 100
+        if self.var.marker_flash_255 == 'yes':
+            marker_manager.set_value(255)
+            self.sleep(pulse_dur)
             marker_manager.set_value(0)
             self.sleep(pulse_dur)
+            marker_manager.set_value(255)
+            self.sleep(pulse_dur)
 
-            # Add cleanup function:
-            self.experiment.cleanup_functions.append(self.cleanup)
+        # Reset:
+        marker_manager.set_value(0)
+        self.sleep(pulse_dur)
 
-            self.set_item_onset()
+        # Add cleanup function:
+        self.experiment.cleanup_functions.append(self.cleanup)
+
+        self.set_item_onset()
 
     def cleanup(self):
 
@@ -159,7 +165,9 @@ class markers_init(item):
         if self.var.marker_gen_mark_file == u'yes':
             full_filename = 'subject-' + str(self.var.subject_nr) + '_marker_table'
             self.get_marker_manager().save_marker_table(filename=full_filename,
-                                                        location=self.experiment.experiment_path)
+                                                        location=self.experiment.experiment_path,
+                                                        more_info={'Device tag': self.get_tag(),
+                                                                   'Subject': self.var.subject_nr})
 
         # Close marker device:
         self.close()
@@ -194,10 +202,6 @@ class markers_init(item):
             addr = ''
         else:
             addr = self.get_addr()
-
-            # Check com address
-            if re.match("^COM\d{1,3}", addr) is None:
-                raise osexception("Incorrect marker device address address:")
 
         if self.get_serial() == 'ANY':
             serialno = ''
@@ -290,9 +294,12 @@ class qtmarkers_init(markers_init, qtautoplugin):
         """
 
         device_tag = self.get_tag()
-        if re.search(r"\s", device_tag) is not None:
+
+        if not(bool(re.match("^[A-Za-z0-9_-]*$", device_tag)) and bool(re.match("^[A-Za-z]*$", device_tag[0]))):
             self.extension_manager.fire('notify',
-                                        message='<strong>Warning</strong>: The Device tag name should not include spaces',
+                                        message='<strong>Warning</strong>: '
+                                                "Device tag can only contain letters, numbers, underscores and dashes "
+                                                "and should start with a letter.",
                                         category='warning',
                                         timeout=10000,
                                         always_show=True)

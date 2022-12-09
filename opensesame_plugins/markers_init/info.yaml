@@ -56,4 +56,4 @@ controls:
     var: "marker_flash_255"
     label: "Flash 255."
     name: "marker_flash_255_widget"
-    info: "When checked, two pulses with a value of 255 will be sent on initialization."
+    info: "When checked, two pulses with a value of 255 will be sent on initialization. Do not use with Actiview as pulses with value 255 may pause the recording."
