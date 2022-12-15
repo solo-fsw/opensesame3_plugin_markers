@@ -55,7 +55,23 @@ class markers_extension(base_extension):
 			# init markdown
 			md = ''
 			md += u'#Marker tables\n'
-			md += u'time: ' + str(time.ctime()) + u'\n\n'
+			md += u'- time: ' + str(time.ctime()) + u'\n\n'
+
+			mark_man_tags = var.mark_man_tags
+
+			md += u'- ' + str(mark_man_tags) + '\n\n'
+
+			for tag in mark_man_tags:
+				cur_marker_manager_tag = mark_man_tags[tag]
+
+				cur_marker_vars = self.extension_manager.provide(
+					'jupyter_workspace_variable',
+					name=f"marker_vars_{cur_marker_manager_tag}"
+				)
+
+				for marker_var in cur_marker_vars:
+					md += u'- ' + str(marker_var) + u': ' + str(cur_marker_vars[marker_var]) + u'\n\n'
+
 
 			summary_df = var.summary_df
 			marker_df = var.marker_df

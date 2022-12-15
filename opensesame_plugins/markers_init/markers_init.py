@@ -30,7 +30,6 @@ class markers_init(item):
     version = 0.1
 
     def reset(self):
-
         """
         desc:
             Resets plug-in to initial values.
@@ -86,6 +85,24 @@ class markers_init(item):
     def set_marker_manager(self, mark_man):
         setattr(self.experiment, f"markers_{self.get_tag()}", mark_man)
 
+    def set_marker_manager_tag(self):
+        try:
+            self.experiment.var.mark_man_tags.append(self.get_tag())
+        except:
+            try:
+                setattr(self.experiment.var, "mark_man_tags", [self.get_tag()])
+            except:
+                pass
+
+    def get_marker_manager_tag(self):
+        if self.is_already_init():
+            return getattr(self.experiment, f"mark_man_tags")
+        else:
+            return None
+
+    def set_marker_vars(self, marker_vars):
+        setattr(self.experiment, f"marker_vars_{self.get_tag()}", marker_vars)
+
     def prepare(self):
 
         """
@@ -94,7 +111,6 @@ class markers_init(item):
         """
 
         # Check input of plugin:
-
         device_tag = self.get_tag()
         if not(bool(re.match("^[A-Za-z0-9_-]*$", device_tag)) and bool(re.match("^[A-Za-z]*$", device_tag[0]))):
             # Raise error, tag can only contain: letters, numbers, underscores and dashes and should start with letter.
@@ -103,6 +119,7 @@ class markers_init(item):
 
         device_address = self.get_addr()
         if device_address != u'ANY' and re.match("^COM\d{1,3}", device_address) is None:
+            # Raise error when marker address is not a proper COM address.
             raise osexception("Incorrect marker device address address:")
 
         if self.is_already_init():
@@ -136,6 +153,14 @@ class markers_init(item):
                                             time_function_ms=lambda: self.time())
         self.set_marker_manager(marker_manager)
 
+        # Add tag to marker manager tag list:
+        self.set_marker_manager_tag()
+
+        # Create marker_vars (dict with marker manager variables)
+        marker_vars = marker_manager.device_properties
+        marker_vars["Address"] = marker_manager.device_address
+        self.set_marker_vars(marker_vars)
+
         # Flash 255
         pulse_dur = 100
         if self.var.marker_flash_255 == 'yes':
@@ -163,11 +188,11 @@ class markers_init(item):
 
         # Generate and save marker file
         if self.var.marker_gen_mark_file == u'yes':
-            full_filename = 'subject-' + str(self.var.subject_nr) + '_marker_table'
+            full_filename = 'subject-' + str(self.experiment.var.subject_nr) + '_marker_table'
             self.get_marker_manager().save_marker_table(filename=full_filename,
                                                         location=self.experiment.experiment_path,
                                                         more_info={'Device tag': self.get_tag(),
-                                                                   'Subject': self.var.subject_nr})
+                                                                   'Subject': self.experiment.var.subject_nr})
 
         # Close marker device:
         self.close()
