@@ -193,7 +193,7 @@ class markers_init(item):
 
         # Generate and save marker file
         if self.var.marker_gen_mark_file == u'yes':
-            full_filename = 'subject-' + str(self.experiment.var.subject_nr) + '_marker_table'
+            full_filename = 'subject-' + str(self.experiment.var.subject_nr) + '_' + self.get_tag() + '_marker_table'
             self.get_marker_manager().save_marker_table(filename=full_filename,
                                                         location=self.experiment.experiment_path,
                                                         more_info={'Device tag': self.get_tag(),
