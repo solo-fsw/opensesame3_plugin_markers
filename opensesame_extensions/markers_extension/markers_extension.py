@@ -52,74 +52,79 @@ class markers_extension(base_extension):
 				name='var'
 			)
 
-			# init markdown
+			marker_tags = var.marker_tags
+
 			md = ''
-			md += u'#Marker tables\n'
-			md += u'- time: ' + str(time.ctime()) + u'\n\n'
+			md += u'Time: ' + str(time.ctime()) + u'\n\n'
 
-			mark_man_tags = var.mark_man_tags
+			for tag in marker_tags:
 
-			md += u'- ' + str(mark_man_tags) + '\n\n'
+				# init markdown
+				md += u'#' + str(tag) + u'\n'
 
-			for tag in mark_man_tags:
-				cur_marker_manager_tag = mark_man_tags[tag]
-
-				cur_marker_vars = self.extension_manager.provide(
-					'jupyter_workspace_variable',
-					name=f"marker_vars_{cur_marker_manager_tag}"
-				)
+				cur_marker_vars = getattr(var, f"marker_vars_{tag}")
 
 				for marker_var in cur_marker_vars:
-					md += u'- ' + str(marker_var) + u': ' + str(cur_marker_vars[marker_var]) + u'\n\n'
+					md += u'- ' + str(marker_var) + u': ' + str(cur_marker_vars[marker_var]) + u'\n'
 
+				marker_df = getattr(var, f"marker_table_{tag}")
+				summary_df = getattr(var, f"summary_table_{tag}")
+				error_df = getattr(var, f"error_table_{tag}")
 
-			summary_df = var.summary_df
-			marker_df = var.marker_df
-			error_df = var.error_df
+				# Add summary table to md
+				summary_df = summary_df.round(decimals=3)
+				md = add_table_to_md(md, summary_df, 'Summary table')
 
-			# Add summary table to md
-			md = self.add_table_to_md(md, summary_df, 'Summary table')
+				# # Add marker table to md
+				marker_df = marker_df.round(decimals=3)
+				md = add_table_to_md(md, marker_df, 'Marker table')
 
-			# # Add marker table to md
-			marker_df = marker_df.round(decimals=3)
-			md = self.add_table_to_md(md, marker_df, 'Marker table')
+				# Add error table to md
+				md = add_table_to_md(md, error_df, 'Error table')
 
-			# Add error table to md
-			md = self.add_table_to_md(md, error_df, 'Error table')
-
-			self.tabwidget.open_markdown(md, u'os-finished-success', _(u'Marker tables'))
+			self.tabwidget.open_markdown(md, u'os-finished-success', u'Marker tables')
 
 		# AttributeErorr occurs when the tables do not exist and thus no markers were sent. In that case, do nothing.
 		except AttributeError:
 			pass
 
-	def add_table_to_md(self, md, df, table_title):
-		md += u'##' + table_title + u':##' + u'\n'
 
-		ncols = len(df.columns)
+def add_table_to_md(md, df, table_title):
+	md += u'##' + table_title + u':##' + u'\n'
 
-		# Column headers
-		md += u'| '
+	ncols = len(df.columns)
+
+	# Column headers
+	md += u'| '
+	for column in df:
+
+		if "_s" in column:
+			column = column.replace("_s", " (s)")
+		if "_ms" in column:
+			column = column.replace("_ms", " (ms)")
+		if "_" in column:
+			column = column.replace("_", " ")
+		column = column.capitalize()
+
+		md += column + u' | '
+	md += u'\n'
+
+	# Header separator
+	md += u'|'
+	for col in range(ncols):
+		md += u'---|'
+	md += u'\n'
+
+	# Values
+	md += u'| '
+	for index, row in df.iterrows():
 		for column in df:
-			md += column + u' | '
+			cur_value = row[column]
+			if isinstance(cur_value, float):
+				cur_value = round(cur_value, 3)
+			md += str(cur_value) + u' | '
 		md += u'\n'
 
-		# Header separator
-		md += u'|'
-		for col in range(ncols):
-			md += u'---|'
-		md += u'\n'
+	md += u'\n\n'
 
-		# Values
-		md += u'| '
-		for index, row in df.iterrows():
-			for column in df:
-				cur_value = row[column]
-				if isinstance(cur_value, float):
-					cur_value = round(cur_value, 3)
-				md += str(cur_value) + u' | '
-			md += u'\n'
-
-		md += u'\n\n'
-
-		return md
+	return md

@@ -87,21 +87,26 @@ class markers_init(item):
 
     def set_marker_manager_tag(self):
         try:
-            self.experiment.var.mark_man_tags.append(self.get_tag())
+            self.experiment.var.marker_tags.append(self.get_tag())
         except:
             try:
-                setattr(self.experiment.var, "mark_man_tags", [self.get_tag()])
+                setattr(self.experiment.var, "marker_tags", [self.get_tag()])
             except:
                 pass
 
     def get_marker_manager_tag(self):
         if self.is_already_init():
-            return getattr(self.experiment, f"mark_man_tags")
+            return getattr(self.experiment.var, "marker_tags")
         else:
             return None
 
     def set_marker_vars(self, marker_vars):
-        setattr(self.experiment, f"marker_vars_{self.get_tag()}", marker_vars)
+        setattr(self.experiment.var, f"marker_vars_{self.get_tag()}", marker_vars)
+
+    def set_marker_tables(self, marker_table, summary_table, error_table):
+        setattr(self.experiment.var, f"marker_table_{self.get_tag()}", marker_table)
+        setattr(self.experiment.var, f"summary_table_{self.get_tag()}", summary_table)
+        setattr(self.experiment.var, f"error_table_{self.get_tag()}", error_table)
 
     def prepare(self):
 
@@ -199,9 +204,7 @@ class markers_init(item):
 
         # Get marker tables and save in var
         marker_df, summary_df, error_df = self.get_marker_manager().gen_marker_table()
-        self.experiment.var.marker_df = marker_df
-        self.experiment.var.summary_df = summary_df
-        self.experiment.var.error_df = error_df
+        self.set_marker_tables(marker_df, summary_df, error_df)
 
     def close(self):
 
