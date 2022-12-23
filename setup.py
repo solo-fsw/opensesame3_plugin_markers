@@ -55,8 +55,6 @@ setup(
 		'Environment :: Win32 (MS Windows)',
 		'License :: OSI Approved :: Apache Software License',
 		'Programming Language :: Python :: 3'],
-	install_requires=['python-markers @ git+https://github.com/solo-fsw/python-markers@develop#egg=python-markers'],
-
 	# The important bit that specifies how the plugin files should be installed,
 	# so that they are found by OpenSesame. This is a bit different from normal
 	# Python modules, because an OpenSesame plugin is not a (normal) Python
