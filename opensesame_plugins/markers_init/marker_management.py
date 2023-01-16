@@ -20,15 +20,6 @@ Notes:
 
 """
 
-# Todo:
-# - Check if libraries exist in OS installation (non-megapack), if not replace them with included libraries or
-#   native libraries. https://osdoc.cogsci.nl/3.3/notes/3312/
-# - Evaluate renaming serial device descriptor in Arduino IDE.
-# - Adjust fake device: should not be general serial device
-# - LUXURY: Evaluate browser based updating of devices.
-# - Check set_bit LSB, MSB
-# - sendcommand should include everything, close if necessary, open in command, send command, close, reopen in data mode
-
 from abc import ABC, abstractmethod
 import GS_timing as timing
 import serial
@@ -40,6 +31,10 @@ import sys
 import os
 import csv
 from serial.tools.list_ports import comports
+import warnings
+
+# Current library version
+LIB_VERSION = "0.0.1"
 
 # Address string indicating that the device is being faked/spoofed:
 FAKE_ADDRESS = 'FAKE'
@@ -110,43 +105,49 @@ class MarkerManager:
             MarkerManagerError: error when something goes wrong in the MarkerManager
         """
 
-        # MarkerManager checks
         try:
-
-            # Check if class with same type and address (except fake) already exists
-            if not len(MarkerManager.marker_manager_instances) == 0 and not device_address == FAKE_ADDRESS:
-
-                for instance in MarkerManager.marker_manager_instances:
-
-                    instance_properties = instance.device_interface.device_properties()
-                    instance_address = instance.device_interface.device_address()
-
-                    if instance_address == device_address and instance_properties['Device'] == device_type:
-                        err_msg = "class of same type and with same address already exists"
-                        raise MarkerManagerError(err_msg)
 
             if device_type not in available_devices:
                 err_msg = f"device_type can only be {available_devices}, got: {device_type}"
-                raise MarkerManagerError(err_msg)
+                Eid = "UnsupportedDevice"
+                raise MarkerManagerError(err_msg, Eid)
 
             if not isinstance(device_address, str):
-                err_msg = f"device_address should be str, got {type(device_address)}"
-                raise MarkerManagerError(err_msg)
+                err_msg = f"device_address should be str, got a different type instead"
+                Eid = "DeviceAddressString"
+                raise MarkerManagerError(err_msg, Eid)
 
             if not isinstance(crash_on_marker_errors, bool):
                 err_msg = f"report_marker_errors should be bool, got {type(crash_on_marker_errors)}"
-                raise MarkerManagerError(err_msg)
+                Eid = "CrashOnMarkerErrorsBoolean"
+                raise MarkerManagerError(err_msg, Eid)
 
             if not callable(time_function_ms):
                 err_msg = "time_function_ms should be function"
-                raise MarkerManagerError(err_msg)
+                Eid = "TimeFunctionMsCallable"
+                raise MarkerManagerError(err_msg, Eid)
+
+            # Check if class with same type and address (except fake) already exists
+            if len(MarkerManager.marker_manager_instances) > 0 and device_address != FAKE_ADDRESS:
+
+                for instance in MarkerManager.marker_manager_instances:
+
+                    instance_properties = instance.device_interface.device_properties
+                    instance_address = instance.device_interface.device_address
+
+                    if instance_address == device_address and instance_properties['Device'] == device_type:
+                        err_msg = "class of same type and with same address already exists"
+                        Eid = "DuplicateDevice"
+                        raise MarkerManagerError(err_msg, Eid)
 
         except MarkerManagerError as e:
             raise e
 
         except Exception as e:
-            raise BaseException(f'Unknown error: {e}')
-
+            err_msg = f'Unknown error in MarkerManage initialization: {e}'
+            Eid = "BaseException"
+            raise MarkerManagerError(err_msg, Eid)
+            
         # Instantiate the correct DeviceInterface subclass or create general serial device when device is fake
         self.device_type = device_type
         if self.device_type == 'UsbParMarker':
@@ -181,12 +182,12 @@ class MarkerManager:
     @property
     def device_address(self):
         """Returns the device address"""
-        return self.device_interface.device_address()
+        return self.device_interface.device_address
 
     @property
     def device_properties(self):
         """Returns the device properties"""
-        return self.device_interface.device_properties()
+        return self.device_interface.device_properties
 
     def close(self):
         """Closes the connection to the device."""
@@ -226,13 +227,15 @@ class MarkerManager:
             if not whole_number(value):
                 err_msg = "Marker value should be whole number."
                 is_fatal = True
-                raise MarkerError(err_msg, is_fatal)
-            
+                Eid = "ValueWholeNumber"
+                raise MarkerError(err_msg, is_fatal, Eid)
+
             # Value should be between 0 and 255:
             if value > 255 or value < 0:
                 err_msg = "Marker value out of range (0 - 255)."
                 is_fatal = True
-                raise MarkerError(err_msg, is_fatal)
+                Eid = "ValueOutOfRange"
+                raise MarkerError(err_msg, is_fatal, Eid)
 
             # Send marker:
             try:
@@ -246,10 +249,10 @@ class MarkerManager:
             if not len(self.set_value_list) == 0 and not value == 0:
                 last_value = self.set_value_list[-1]['value']
                 if value == last_value:
-
                     err_msg = f"Marker with value {value} is sent twice in a row."
                     is_fatal = False
-                    raise MarkerError(err_msg, is_fatal)
+                    Eid = "MarkerSentTwice"
+                    raise MarkerError(err_msg, is_fatal, Eid)
 
             # Two values should be separated by at least the concurrent marker threshold:
             if not len(self.set_value_list) == 0:
@@ -260,16 +263,19 @@ class MarkerManager:
                         err_msg = f"Marker with value {value} was sent within {self.concurrent_marker_threshold_ms} " \
                                   f"ms after previous marker with value {last_value}"
                         is_fatal = False
-                        raise MarkerError(err_msg, is_fatal)
+                        Eid = "ConcurrentMarkerThreshold"
+                        raise MarkerError(err_msg, is_fatal, Eid)
 
         except MarkerError as e:
             # Save error
             self.error_list.append({'time_ms': cur_time, 'error': e.message})
             if e.is_fatal or self.crash_on_marker_errors:
                 raise e
-                
+
         except Exception as e:
-            raise BaseException(f'Unknown error: {e}')
+            err_msg = f'Unknown error in set_value: {e}'
+            Eid = "BaseException"
+            raise MarkerError(f'Unknown error: {e}', True, Eid)
 
         # Save marker value
         self._current_value = value
@@ -293,14 +299,16 @@ class MarkerManager:
 
         # Check that bits consist of string with 8 chars:
         if type(bits) != str or len(bits) != 8:
-            err_msg = "bits should be str containing characters"
-            raise MarkerManagerError(err_msg)
+            err_msg = "bits should be a string containing 8 characters"
+            Eid = "BitTypeLength"
+            raise MarkerError(err_msg, True, Eid)
 
         # Check that the 8 chars consist of zeros and/or ones:
         find_all_bits = re.findall('[0-1]', bits)
         if not len(find_all_bits) == 8:
-            err_msg = "bits should be 8 str characters consisting of 0 or 1, e.g. '00000001'"
-            raise MarkerManagerError(err_msg)
+            err_msg = "bits can only consist of zeros and ones, e.g. '00000001'"
+            Eid = "BitElements"
+            raise MarkerError(err_msg, True, Eid)
 
         # Convert bits to int and set value
         value = int(bits, 2)
@@ -316,7 +324,8 @@ class MarkerManager:
 
         if not whole_number(bit) or bit < 0 or bit > 7:
             err_msg = "bit should be whole number between 0 and 7"
-            raise MarkerManagerError(err_msg)
+            Eid = "BitTypeRange"
+            raise MarkerError(err_msg, True, Eid)
 
         # Convert current value to 8 bit string
         cur_bits = format(self._current_value, '#010b')[2:]
@@ -328,7 +337,8 @@ class MarkerManager:
             new_bits = cur_bits[:bit] + '0' + cur_bits[bit + 1:]
         else:
             err_msg = "set_bit state can only be 'on' or 'off'"
-            raise MarkerManagerError(err_msg)
+            Eid = "BitState"
+            raise MarkerError(err_msg, True, Eid)
 
         # Convert 8 bit string to int and set_value:
         value = int(new_bits, 2)
@@ -364,33 +374,27 @@ class MarkerManager:
         # - The marker start is defined as marker value change from zero to non-zero or from non-zero to non-zero
         # - The marker end is defined as a marker value change from non-zero to zero or from non-zero to non-zero
         for index in set_value_df.index:
-
             cur_value = set_value_df.at[index, 'value']
             cur_time = set_value_df.at[index, 'time_ms']
-
             # Value changes
             if cur_value != last_value:
-
                 # Value changed to 0 and it is not the first value
                 if cur_value == 0 and last_value is not None:
-
                     # end marker
                     marker_df.at[marker_counter, 'end_time_ms'] = cur_time
-                    marker_counter = marker_counter + 1
+                    marker_counter += 1
 
                 # Value changed from 0 to non-zero
                 elif cur_value != 0 and last_value == 0:
-
                     # start marker:
                     marker_df.at[marker_counter, 'value'] = cur_value
                     marker_df.at[marker_counter, 'start_time_ms'] = cur_time
 
                 # Value changed from non-zero to non-zero
                 elif cur_value != 0 and last_value != 0:
-
                     # end marker:
                     marker_df.at[marker_counter, 'end_time_ms'] = cur_time
-                    marker_counter = marker_counter + 1
+                    marker_counter += 1
 
                     # start marker:
                     marker_df.at[marker_counter, 'value'] = cur_value
@@ -423,11 +427,25 @@ class MarkerManager:
             marker_df.loc[index, "occurrence"] = occurrence
 
         # Create summary table
-        summary_df = marker_df[['value', 'occurrence']]
+        summary_df = marker_df.loc[:, ('value', 'occurrence')]
+        summary_df["mean_duration"] = None
+        summary_df["min_duration"] = None
+        summary_df["max_duration"] = None
+        summary_df["total_duration"] = None
+        for index, val in enumerate(summary_df.value):
+            all_durations = marker_df[summary_df["value"] == val].duration_ms.tolist()
+            summary_df.loc[index, 'mean_duration'] = (sum(all_durations)) / len(all_durations)
+            summary_df.loc[index, 'min_duration'] = min(all_durations)
+            summary_df.loc[index, 'max_duration'] = max(all_durations)
+            summary_df.loc[index, 'total_duration'] = sum(all_durations)
+
         summary_df = summary_df.drop_duplicates(subset=['value'], keep='last')
 
         # Create error table
         error_df = pandas.DataFrame(self.error_list)
+        if len(self.error_list) > 0:
+            error_df["time_s"] = error_df["time_ms"] / 1000
+            error_df.drop("time_ms", axis=1, inplace=True)
 
         return marker_df, summary_df, error_df
 
@@ -516,9 +534,10 @@ class MarkerManager:
         with open(full_fn, 'w', newline='') as file_out:
             writer = csv.writer(file_out, delimiter='\t')
             writer.writerow(['Date: ' + date_str])
+            writer.writerow(['Library version: ' + LIB_VERSION])
             writer.writerow(['Device: ' + self.device_properties.get('Device')])
-            writer.writerow(['Serialno: ' + self.device_properties.get('Serialno')])
-            writer.writerow(['Version: ' + self.device_properties.get('Version')])
+            writer.writerow(['Device serialno: ' + self.device_properties.get('Serialno')])
+            writer.writerow(['Device version: ' + self.device_properties.get('Version')])
             if isinstance(more_info, dict):
                 for key, value in more_info.items():
                     writer.writerow([key + ': ' + str(value)])
@@ -538,32 +557,39 @@ class MarkerManager:
 
 class MarkerError(Exception):
     """"Error sending a marker"""
-    def __init__(self, message, is_fatal):
-        super().__init__(message)
 
+    def __init__(self, message, is_fatal, Eid):
+        super().__init__(message)
         self.message = message
         self.is_fatal = is_fatal
+        self.id = Eid
 
 
 class MarkerManagerError(Exception):
     """Error involving the MarkerManager"""
-    def __init__(self, message):
+
+    def __init__(self, message, Eid):
         super().__init__(message)
         self.message = message
+        self.id = Eid
 
 
 class FindDeviceError(Exception):
     """Error finding the device"""
-    def __init__(self, message):
+
+    def __init__(self, message, Eid):
         super().__init__(message)
         self.message = message
+        self.id = Eid
 
 
 class SerialError(Exception):
     """Error involving the serial device"""
-    def __init__(self, message):
+
+    def __init__(self, message, Eid):
         super().__init__(message)
         self.message = message
+        self.id = Eid
 
 
 class DeviceInterface(ABC):
@@ -597,7 +623,7 @@ class DeviceInterface(ABC):
         should be used by users since it performs generic checks and
         logs the markers."""
         pass
-    
+
     @abstractmethod
     def _close(self):
         """Closes the connection to the serial device, if necessary."""
@@ -606,7 +632,7 @@ class DeviceInterface(ABC):
     @property
     def is_fake(self):
         """Returns a bool indication if the device is faked."""
-        return self.device_address() == FAKE_ADDRESS
+        return self.device_address == FAKE_ADDRESS
 
 
 class SerialDevice(DeviceInterface):
@@ -627,8 +653,8 @@ class SerialDevice(DeviceInterface):
 
         if not device_address == FAKE_ADDRESS:
 
-            # Open device in command mode:
-            self.command_mode()
+            # Open device:
+            self.open_serial_device()
             timing.delay(100)
 
             # Example: {"Version":"HW1:SW1.2","Serialno":"S01234","Device":"UsbParMar"}
@@ -636,18 +662,13 @@ class SerialDevice(DeviceInterface):
 
             if properties == "":
                 err_msg = "Serial device did not respond."
-                raise SerialError(err_msg)
+                Eid = "NoResponse"
+                raise SerialError(err_msg, Eid)
+
             if "Serialno" not in properties:
                 err_msg = "Serialno missing."
-                raise SerialError(err_msg)
-
-            # Close device
-            self.serial_device.close()
-            timing.delay(100)
-
-            # Open device in data mode:
-            self.data_mode()
-            timing.delay(100)
+                Eid = "NoSerialNo"
+                raise SerialError(err_msg, Eid)
 
         # return fake device
         else:
@@ -657,19 +678,19 @@ class SerialDevice(DeviceInterface):
 
         self._device_properties = properties
 
+    @property
     def device_address(self):
         """Returns device address."""
         return self._device_address
 
+    @property
     def device_properties(self):
         """Returns device properties."""
         return self._device_properties
 
     def _set_value(self, value):
         """Sets the value of the serial device."""
-        if self.is_fake:
-            pass
-        else:
+        if not self.is_fake:
             value_byte = value.to_bytes(1, 'big')
             self.serial_device.write(value_byte)
 
@@ -678,66 +699,85 @@ class SerialDevice(DeviceInterface):
         if not self.is_fake:
             self.serial_device.close()
 
-    def command_mode(self):
-        """Opens serial device in command mode."""
-        if not self.is_fake:
-            command_params = {"baudrate": 4800, "bytesize": 8,
-                              "parity": 'N', "stopbits": 1,
-                              "timeout": 2}
-            self.open_serial_device(command_params)
+    def open_serial_device(self, params=None):
+        """Opens serial device with specified parameters."""
 
-    def data_mode(self):
-        """Opens serial device in data mode."""
-        if not self.is_fake:
-            data_params = {"baudrate": 115200, "bytesize": 8,
-                           "parity": 'N', "stopbits": 1,
-                           "timeout": 2}
-            self.open_serial_device(data_params)
+        # Opens in data mode by default
+        if params is None:
+            params = {"baudrate": 115200, "bytesize": 8,
+                      "parity": 'N', "stopbits": 1,
+                      "timeout": 2}
 
-    def open_serial_device(self, params):
-        """Opens serial device with specified baudrate."""
         if not self.is_fake:
             # Create serial device.
             try:
                 self.serial_device = serial.Serial(self._device_address, **params)
             except:
                 err_msg = "Could not open serial device"
-                raise SerialError(err_msg)
+                Eid = "NoSerialDeviceMade"
+                raise SerialError(err_msg, Eid)
+
+    def command_mode(self):
+        command_params = {"baudrate": 4800, "bytesize": 8,
+                          "parity": 'N', "stopbits": 1,
+                          "timeout": 2}
+        self.open_serial_device(params=command_params)
 
     def send_command(self, command):
         """Sends command to serial device."""
 
-        assert not self.is_fake
+        if self.is_fake:
+            err_msg = "Fake device is not allowed to send commands."
+            Eid = "FakeDeviceError"
+            raise SerialError(err_msg, Eid)
 
-        if not self.serial_device.baudrate == 4800:
-            err_msg = "Serial device not in command mode."
-            raise SerialError(err_msg)
-        if not self.serial_device.is_open:
-            err_msg = "Serial device not open."
-            raise SerialError(err_msg)
-        if not type(command) == str:
-            err_msg = "Command should be a string."
-            raise SerialError(err_msg)
         else:
-            # Send command
-            self.serial_device.flushInput()
-            self.serial_device.write(command.encode())
+            # Close device and open in command mode
+            self.serial_device.close()
             timing.delay(100)
 
-            # Get reply
-            data = self.serial_device.readline()
+            self.command_mode()
+            timing.delay(100)
 
-            decoded_data = data.decode('utf-8')
-
-            # If reply is json string, decode it
-            try:
-                json.loads(decoded_data)
-            except ValueError:
-                pass
+            if not self.serial_device.baudrate == 4800:
+                err_msg = "Serial device not in command mode."
+                Eid = "BaudrateNotCommandmode"
+                raise SerialError(err_msg, Eid)
+            if not self.serial_device.is_open:
+                err_msg = "Serial device not open."
+                Eid = "SerialDeviceClosed"
+                raise SerialError(err_msg, Eid)
+            if not type(command) == str:
+                err_msg = "Command should be a string."
+                Eid = "CommandType"
+                raise SerialError(err_msg, Eid)
             else:
-                decoded_data = json.loads(decoded_data)
+                # Send command
+                self.serial_device.flushInput()
+                self.serial_device.write(command.encode())
+                timing.delay(100)
 
-            return decoded_data
+                # Get reply
+                data = self.serial_device.readline()
+                decoded_data = data.decode('utf-8')
+
+                # If reply is json string, decode it
+                try:
+                    json.loads(decoded_data)
+                except ValueError:
+                    pass
+                else:
+                    decoded_data = json.loads(decoded_data)
+
+                # Close device
+                self.serial_device.close()
+                timing.delay(100)
+
+                # Open device again (in data mode by default)
+                self.open_serial_device()
+                timing.delay(100)
+
+                return decoded_data
 
     def get_info(self):
         """Get info from serial device."""
@@ -760,7 +800,7 @@ class SerialDevice(DeviceInterface):
     def get_hw_version(self):
         """Get hardware version."""
         if not self.is_fake:
-            properties = self.device_properties()
+            properties = self.device_properties
             version = properties.get('Version')
             hw_version = re.search('HW(.*):', version)
             hw_version = hw_version.group(1)
@@ -771,7 +811,7 @@ class SerialDevice(DeviceInterface):
     def get_sw_version(self):
         """Get software version."""
         if not self.is_fake:
-            properties = self.device_properties()
+            properties = self.device_properties
             version = properties.get('Version')
             sw_version = re.search('SW(.*)', version)
             sw_version = sw_version.group(1)
@@ -787,7 +827,8 @@ class UsbParMarker(SerialDevice):
         """Turns led lights on"""
         sw_version = self.get_sw_version()
         if float(sw_version) < 1.3:
-            leds_on_answer = 'Check firmware version, could not turn on leds'
+            warnings.warn('Check firmware version, could not turn on leds')
+            leds_on_answer = 'LedsOff'
         else:
             leds_on_answer = self.send_command('L')
         return leds_on_answer
@@ -796,7 +837,8 @@ class UsbParMarker(SerialDevice):
         """Turns led lights on"""
         sw_version = self.get_sw_version()
         if float(sw_version) < 1.3:
-            leds_off_answer = 'Check firmware version, could not turn off leds'
+            warnings.warn('Check firmware version, could not turn off leds')
+            leds_on_answer = 'LedsOff'
         else:
             leds_off_answer = self.send_command('O')
         return leds_off_answer
@@ -826,9 +868,9 @@ def whole_number(value):
     """Evaluate whether value is whole number."""
     try:
         return isinstance(value, int) or \
-                (isinstance(value, float) and value.is_integer())
+               (isinstance(value, float) and value.is_integer())
     except:
-        raise(MarkerManagerError('error whole number'))
+        raise (MarkerManagerError('error whole number'))
 
 
 def gen_com_filters(device_regex='^.*$',
@@ -836,7 +878,6 @@ def gen_com_filters(device_regex='^.*$',
                     sn_regex='^.*$',
                     com_dev_desc_regex='^.*$',
                     com_dev_hwid_regex='^USB VID:PID=2341:.*$'):
-
     # Return the COM filters:
     return {
         "device_regex": device_regex,
@@ -877,7 +918,8 @@ def find_device(device_type='', serial_no='', com_port='', fallback_to_fake=Fals
 
     # Check device type
     if device_type not in available_devices and device_type != '':
-        raise FindDeviceError(f"Only {available_devices} supported.")
+        Eid = "UnsupportedDevice"
+        raise FindDeviceError(f"Only {available_devices} supported.", Eid)
 
     info = {}
 
@@ -898,27 +940,25 @@ def find_device(device_type='', serial_no='', com_port='', fallback_to_fake=Fals
                                   sn_regex=sn_regexp)
 
     # Params:
-    connected = False
     port_hit = False
-    device_hit = False
-    serial_hit = False
-    multiple_hit = False
+    device_hit = []
     connection_error = False
     connection_error_port = ''
     connection_error_info = ''
     port_list = []
+    connected_port_list = []
+    port_n = 0
 
     # Loop through ports
-    for port, desc, hwid in comports():
+    ports_listed = comports()
+    for port, desc, hwid in ports_listed:
 
         # Check filters:
         port_matches_request = re.match(com_filters['port_regex'], port) is not None
         com_dev_desc_matches = re.match(com_filters['com_dev_desc_regex'], desc) is not None
         com_dev_hwid_matches = re.match(com_filters['com_dev_hwid_regex'], hwid) is not None
 
-        if not (port_matches_request
-                and com_dev_desc_matches
-                and com_dev_hwid_matches):
+        if not (port_matches_request and com_dev_desc_matches and com_dev_hwid_matches):
             continue
 
         # save ports in list
@@ -928,14 +968,17 @@ def find_device(device_type='', serial_no='', com_port='', fallback_to_fake=Fals
 
         # At least one port with correct port, desc and hwid found
         port_hit = True
+        port_n += 1
 
         # Loop through ports and check devices
         for port in port_list:
 
+            print(port)
+
             try:
                 # Create general serial device to obtain device info
                 cur_device = SerialDevice(port)
-
+                cur_device._close()
             except:
                 try:
                     cur_device._close()
@@ -946,44 +989,45 @@ def find_device(device_type='', serial_no='', com_port='', fallback_to_fake=Fals
                 connection_error_info = sys.exc_info()[1]
                 continue
 
-            info["device"] = cur_device.device_properties()
+            info["device"] = cur_device.device_properties
 
             # Check filter
             device_matches_request = re.match(com_filters['device_regex'], info['device']['Device']) is not None
             serial_matches_request = re.match(com_filters['sn_regex'], info['device']['Serialno']) is not None
 
-            if device_matches_request:
-                device_hit = True
-            if serial_matches_request:
-                serial_hit = True
-            if connected:
-                multiple_hit = True
-
-            info["com_port"] = port
-            connected = True
+            if device_matches_request and serial_matches_request:
+                device_hit.append(True)
+                connected_port_list.append(port)
 
     # Checks:
     try:
 
-        # Check if any port was found:
+        # Check if any port was found
         if not port_hit:
             err_msg = "No device matched the specified COM address."
-            raise FindDeviceError(err_msg)
+            Eid = "NoComMatch"
+            raise FindDeviceError(err_msg, Eid)
+
+        # Check if one device was found
         if not device_hit:
-            err_msg = "No device matched the specified device type."
-            raise FindDeviceError(err_msg)
-        if not serial_hit:
-            err_msg = "No device matched the specified serial number."
-            raise FindDeviceError(err_msg)
-        if not connected:
-            err_msg = "No suitable COM devices found."
-            raise FindDeviceError(err_msg)
-        if multiple_hit:
-            err_msg = "Multiple matching devices found."
-            FindDeviceError(err_msg)
-        if connection_error:
-            err_msg = f'Could not connect to "{connection_error_port}" because: {connection_error_info}'
-            raise FindDeviceError(err_msg)
+            err_msg = "No device matched the specified device type and/or serial number."
+            Eid = "NoDeviceMatch"
+            raise FindDeviceError(err_msg, Eid)
+        else:
+            if device_hit.count(True) > 1:
+                err_msg = "Multiple matching devices found."
+                Eid = "MultipleConnections"
+                raise FindDeviceError(err_msg, Eid)
+
+            else:
+                device_hit_index = device_hit.index(True)
+                info["com_port"] = connected_port_list[device_hit_index]
+
+        # # Check if a connection error happened
+        # if connection_error:
+        #     err_msg = f'Could not connect to "{connection_error_port}" because: {connection_error_info}'
+        #     Eid = "NoConnection"
+        #     raise FindDeviceError(err_msg, Eid)
 
     except FindDeviceError as e:
         if fallback_to_fake:
