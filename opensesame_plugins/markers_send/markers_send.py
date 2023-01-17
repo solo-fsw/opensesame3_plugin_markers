@@ -41,6 +41,9 @@ class markers_send(item):
     def get_tag(self):
         return self.var.marker_device_tag
 
+    def get_value(self):
+        return self.var.marker_value
+
     def is_already_init(self):
         try:
             return hasattr(self.experiment, f"markers_{self.get_tag()}")
@@ -72,6 +75,17 @@ class markers_send(item):
             Prepare phase.
         """
 
+        # Check input of plugin:
+        device_tag = self.get_tag()
+        if not(bool(re.match("^[A-Za-z0-9_-]*$", device_tag)) and bool(re.match("^[A-Za-z]*$", device_tag[0]))):
+            # Raise error, tag can only contain: letters, numbers, underscores and dashes and should start with letter.
+            raise osexception("Device tag can only contain letters, numbers, underscores and dashes "
+                              "and should start with a letter.")
+
+        if not self.is_already_init():
+            raise osexception("You must have a marker object in initialize mode before sending markers."
+                              "Make sure the Device tags match.")
+
         # Call the parent constructor.
         item.prepare(self)
 
@@ -82,16 +96,13 @@ class markers_send(item):
             Run phase.
         """
 
-        # Check if initialized:
-        if not self.is_already_init():
-            raise osexception("You must have a marker object in initialize mode before sending markers."
-                              "Make sure the Device tags match.")
+
 
         # Send marker:
         try:
             self.get_marker_manager().set_value(int(self.var.marker_value))
         except:
-            raise osexception(f"Error sending marker: {sys.exc_info()[1]}")
+            raise osexception(f"Error sending marker with value {self.var.marker_value}: {sys.exc_info()[1]}")
 
         # Sleep for object duration (blocking)
         self.sleep(int(self.var.marker_object_duration))
@@ -102,7 +113,7 @@ class markers_send(item):
             try:
                 self.get_marker_manager().set_value(0)
             except:
-                raise osexception(f"Error sending marker: {sys.exc_info()[1]}")
+                raise osexception(f"Error sending marker with value 0: {sys.exc_info()[1]}")
 
         self.set_item_onset()
 
@@ -179,11 +190,3 @@ class qtmarkers_send(markers_send, qtautoplugin):
         desc:
             Activates the relevant controls for each setting.
         """
-
-        device_tag = self.get_tag()
-        if re.search(r"\s", device_tag) is not None:
-            self.extension_manager.fire('notify',
-                                        message='<strong>Warning</strong>: The Device tag name should not include spaces',
-                                        category='warning',
-                                        timeout=10000,
-                                        always_show=True)
