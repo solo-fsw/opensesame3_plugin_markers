@@ -6,7 +6,9 @@ This is an OpenSesame plugin for seding markers with Leiden University devices.
 Make sure Git is installed.
 
 In OpenSesame, run: 
-!pip install --user git+https://github.com/solo-fsw/opensesame_plugin_markers. Then, restart OpenSesame. The Markers items should now be visible under in the Items Toolbar.
+`!pip install --user git+https://github.com/solo-fsw/opensesame_plugin_markers` 
+
+Restart OpenSesame. The Markers items should now be visible under in the Items Toolbar:
 
 ![markers_init](/opensesame_plugins/markers_init/markers_init_large.png)
 ![markers_send](/opensesame_plugins/markers_send/markers_send_large.png)
