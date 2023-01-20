@@ -70,10 +70,6 @@ class markers_send(item):
             raise osexception("Device tag can only contain letters, numbers, underscores and dashes "
                               "and should start with a letter.")
 
-        if not self.is_already_init():
-            raise osexception("You must have a marker object in initialize mode before sending markers."
-                              "Make sure the Device tags match.")
-
         # Call the parent constructor.
         item.prepare(self)
 
@@ -83,6 +79,10 @@ class markers_send(item):
         desc:
             Run phase.
         """
+
+        if not self.is_already_init():
+            raise osexception("You must have a marker object in initialize mode before sending markers."
+                              " Make sure the Device tags match.")
 
         # Send marker:
         try:
