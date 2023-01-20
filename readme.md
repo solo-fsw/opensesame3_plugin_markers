@@ -13,7 +13,7 @@ These installation instructions will install the Markers plugin in the Users fol
 
 - Restart OpenSesame. 
 
-- The Markers items should now be visible under in the Items Toolbar:
+- The Markers items should now be visible in the Items Toolbar:
 
     ![markers_init](/opensesame_plugins/markers_init/markers_init_large.png)
     ![markers_send](/opensesame_plugins/markers_send/markers_send_large.png)
