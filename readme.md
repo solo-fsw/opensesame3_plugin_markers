@@ -3,11 +3,13 @@
 This is an OpenSesame plugin for sending markers with Leiden University devices. 
 
 ## Installation
-Make sure Git is installed.
+These installation instructions will install the Markers plugin in the Users folder (C:\Users\<user name>\AppData\Roaming\Python\share). When different users need to use the plugin on one computer, they must all install the plugin separately.
+
+Make sure Git is installed. 
 
 In OpenSesame, run from the Console:
 
-`!pip install --user git+https://github.com/solo-fsw/opensesame_plugin_markers` 
+`!pip install --user git+https://github.com/solo-fsw/opensesame_plugin_markers`
 
 Restart OpenSesame. 
 
