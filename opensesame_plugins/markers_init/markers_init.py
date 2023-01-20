@@ -44,7 +44,7 @@ class markers_init(item):
         self.var.marker_gen_mark_file = u'yes'
         self.var.marker_flash_255 = u'no'
 
-    def get_device(self):
+    def get_device_gui(self):
         if self.var.marker_device == u'UsbParMarker':
             device = 'UsbParMarker'
         elif self.var.marker_device == u'Eva':
@@ -55,58 +55,64 @@ class markers_init(item):
             raise osexception(u'INTERNAL ERROR')
         return device
 
-    def get_addr(self):
+    def get_addr_gui(self):
         return self.var.marker_device_addr
 
-    def get_serial(self):
+    def get_serial_gui(self):
         return self.var.marker_device_serial
 
-    def get_tag(self):
+    def get_tag_gui(self):
         return self.var.marker_device_tag
 
-    def get_dummy_mode(self):
+    def get_dummy_mode_gui(self):
         return self.var.marker_dummy_mode == u'yes'
 
-    def get_crash_on_mark_error(self):
+    def get_crash_on_mark_error_gui(self):
         return self.var.marker_crash_on_mark_errors == u'yes'
 
     def is_already_init(self):
         try:
-            return hasattr(self.experiment, f"markers_{self.get_tag()}")
+            return hasattr(self.experiment, f"markers_{self.get_tag_gui()}")
         except:
             return False
 
-    def get_marker_manager(self):
+    def get_marker_manager_var(self):
         if self.is_already_init():
-            return getattr(self.experiment, f"markers_{self.get_tag()}")
+            return getattr(self.experiment, f"markers_{self.get_tag_gui()}")
         else:
             return None
 
-    def set_marker_manager(self, mark_man):
-        setattr(self.experiment, f"markers_{self.get_tag()}", mark_man)
+    def set_marker_manager_var(self, mark_man):
+        setattr(self.experiment, f"markers_{self.get_tag_gui()}", mark_man)
 
-    def set_marker_manager_tag(self):
+    def set_marker_manager_tag_var(self):
         try:
-            self.experiment.var.marker_tags.append(self.get_tag())
+            self.experiment.var.markers_tags.append(self.get_tag_gui())
         except:
             try:
-                setattr(self.experiment.var, "marker_tags", [self.get_tag()])
+                setattr(self.experiment.var, "markers_tags", [self.get_tag_gui()])
             except:
                 pass
 
-    def get_marker_manager_tag(self):
-        if self.is_already_init():
-            return getattr(self.experiment.var, "marker_tags")
-        else:
-            return None
+    def set_marker_prop_var(self, marker_prop):
+        setattr(self.experiment.var, f"markers_prop_{self.get_tag_gui()}", marker_prop)
 
-    def set_marker_vars(self, marker_vars):
-        setattr(self.experiment.var, f"marker_vars_{self.get_tag()}", marker_vars)
+    def set_com_port_var(self, com_port):
+        setattr(self.experiment.var, f"markers_com_port_{self.get_tag_gui()}", com_port)
 
-    def set_marker_tables(self, marker_table, summary_table, error_table):
-        setattr(self.experiment.var, f"marker_table_{self.get_tag()}", marker_table)
-        setattr(self.experiment.var, f"summary_table_{self.get_tag()}", summary_table)
-        setattr(self.experiment.var, f"error_table_{self.get_tag()}", error_table)
+    def get_com_port_var(self):
+        return getattr(self.experiment, f"markers_com_port_{self.get_tag_gui()}")
+
+    def set_device_var(self, device):
+        setattr(self.experiment.var, f"markers_device_{self.get_tag_gui()}", device)
+
+    def get_device_var(self):
+        return getattr(self.experiment, f"markers_device_{self.get_tag_gui()}")
+
+    def set_marker_tables_var(self, marker_table, summary_table, error_table):
+        setattr(self.experiment.var, f"markers_marker_table_{self.get_tag_gui()}", marker_table)
+        setattr(self.experiment.var, f"markers_summary_table_{self.get_tag_gui()}", summary_table)
+        setattr(self.experiment.var, f"markers_error_table_{self.get_tag_gui()}", error_table)
 
     def prepare(self):
 
@@ -116,20 +122,36 @@ class markers_init(item):
         """
 
         # Check input of plugin:
-        device_tag = self.get_tag()
+        device_tag = self.get_tag_gui()
         if not(bool(re.match("^[A-Za-z0-9_-]*$", device_tag)) and bool(re.match("^[A-Za-z]*$", device_tag[0]))):
             # Raise error, tag can only contain: letters, numbers, underscores and dashes and should start with letter.
-            raise osexception("Device tag can only contain letters, numbers, underscores and dashes "
+            raise osexception(f"Incorrect device tag: {device_tag}. "
+                              "Device tag can only contain letters, numbers, underscores and dashes "
                               "and should start with a letter.")
 
-        device_address = self.get_addr()
-        if device_address != u'ANY' and re.match("^COM\d{1,3}", device_address) is None:
+        device_address = self.get_addr_gui()
+        if device_address != u'ANY' and re.match("^COM\d{1,3}", str(device_address)) is None:
             # Raise error when marker address is not a proper COM address.
-            raise osexception("Incorrect marker device address address:")
+            raise osexception(f"Incorrect marker device address: {device_address}")
 
         if self.is_already_init():
             # Raise error since you cannot init twice.
             raise osexception("Marker device already initialized.")
+
+        # Add tag to marker manager tag list:
+        self.set_marker_manager_tag_var()
+
+        # Get com port
+        if self.get_dummy_mode_gui():
+            com_port = 'FAKE'
+            device = 'FAKE DEVICE'
+        else:
+            info = self.resolve_com_port()
+            device = info['device']['Device']
+            com_port = info['com_port']
+
+        self.set_device_var(device)
+        self.set_com_port_var(com_port)
 
         # Call the parent constructor.
         item.prepare(self)
@@ -141,30 +163,20 @@ class markers_init(item):
             Run phase.
         """
 
-        # Set Fake device in dummy mode
-        if self.get_dummy_mode():
-            com_port = 'FAKE'
-            device = 'FAKE DEVICE'
-        else:
-            # Resolve device:
-            info = self.resolve_com_port()
-            device = info['device']['Device']
-            com_port = info['com_port']
+        device = self.get_device_var()
+        com_port = self.get_com_port_var()
 
         # Build serial manager:
         marker_manager = mark.MarkerManager(device_type=device,
                                             device_address=com_port,
-                                            crash_on_marker_errors=self.get_crash_on_mark_error(),
+                                            crash_on_marker_errors=self.get_crash_on_mark_error_gui(),
                                             time_function_ms=lambda: self.time())
-        self.set_marker_manager(marker_manager)
-
-        # Add tag to marker manager tag list:
-        self.set_marker_manager_tag()
+        self.set_marker_manager_var(marker_manager)
 
         # Create marker_vars (dict with marker manager variables)
-        marker_vars = marker_manager.device_properties
-        marker_vars["Address"] = marker_manager.device_address
-        self.set_marker_vars(marker_vars)
+        marker_prop = marker_manager.device_properties
+
+        self.set_marker_prop_var(marker_prop)
 
         # Flash 255
         pulse_dur = 100
@@ -188,23 +200,23 @@ class markers_init(item):
     def cleanup(self):
 
         # Reset value:
-        self.get_marker_manager().set_value(0)
+        self.get_marker_manager_var().set_value(0)
         self.sleep(100)
 
         # Generate and save marker file
         if self.var.marker_gen_mark_file == u'yes':
-            full_filename = 'subject-' + str(self.experiment.var.subject_nr) + '_' + self.get_tag() + '_marker_table'
-            self.get_marker_manager().save_marker_table(filename=full_filename,
+            full_filename = 'subject-' + str(self.experiment.var.subject_nr) + '_' + self.get_tag_gui() + '_marker_table'
+            self.get_marker_manager_var().save_marker_table(filename=full_filename,
                                                         location=self.experiment.experiment_path,
-                                                        more_info={'Device tag': self.get_tag(),
+                                                        more_info={'Device tag': self.get_tag_gui(),
                                                                    'Subject': self.experiment.var.subject_nr})
 
         # Close marker device:
         self.close()
 
         # Get marker tables and save in var
-        marker_df, summary_df, error_df = self.get_marker_manager().gen_marker_table()
-        self.set_marker_tables(marker_df, summary_df, error_df)
+        marker_df, summary_df, error_df = self.get_marker_manager_var().gen_marker_table()
+        self.set_marker_tables_var(marker_df, summary_df, error_df)
 
     def close(self):
 
@@ -214,27 +226,27 @@ class markers_init(item):
         """
 
         try:
-            self.get_marker_manager().close()
+            self.get_marker_manager_var().close()
             print("Disconnected from marker device.")
         except:
             pass
 
     def resolve_com_port(self):
 
-        if self.get_device() == 'ANY':
+        if self.get_device_gui() == 'ANY':
             device_type = ''
         else:
-            device_type = self.get_device()
+            device_type = self.get_device_gui()
 
-        if self.get_addr() == 'ANY':
+        if self.get_addr_gui() == 'ANY':
             addr = ''
         else:
-            addr = self.get_addr()
+            addr = self.get_addr_gui()
 
-        if self.get_serial() == 'ANY':
+        if self.get_serial_gui() == 'ANY':
             serialno = ''
         else:
-            serialno = self.get_serial()
+            serialno = self.get_serial_gui()
 
         # Find device
         try:
@@ -320,14 +332,3 @@ class qtmarkers_init(markers_init, qtautoplugin):
         desc:
             Activates the relevant controls for each setting.
         """
-
-        device_tag = self.get_tag()
-
-        if not(bool(re.match("^[A-Za-z0-9_-]*$", device_tag)) and bool(re.match("^[A-Za-z]*$", device_tag[0]))):
-            self.extension_manager.fire('notify',
-                                        message='<strong>Warning</strong>: '
-                                                "Device tag can only contain letters, numbers, underscores and dashes "
-                                                "and should start with a letter.",
-                                        category='warning',
-                                        timeout=10000,
-                                        always_show=True)

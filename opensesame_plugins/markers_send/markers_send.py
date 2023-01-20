@@ -56,18 +56,6 @@ class markers_send(item):
         else:
             return None
 
-    def set_marker_manager(self, mark_man):
-        setattr(self.experiment, f"markers_{self.get_tag()}", mark_man)
-
-    def get_init_vars(self):
-        if self.is_already_init():
-            return getattr(self.experiment, f"markers_vars_{self.get_tag()}")
-        else:
-            return None
-
-    def set_init_vars(self, init_vars):
-        setattr(self.experiment, f"marker_vars_{self.get_tag()}", init_vars)
-
     def prepare(self):
 
         """
@@ -95,8 +83,6 @@ class markers_send(item):
         desc:
             Run phase.
         """
-
-
 
         # Send marker:
         try:

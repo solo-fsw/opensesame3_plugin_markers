@@ -21,7 +21,7 @@ Notes:
 """
 
 from abc import ABC, abstractmethod
-import GS_timing as timing
+import utils.GS_timing as timing
 import serial
 import datetime
 import json
@@ -922,6 +922,7 @@ def find_device(device_type='', serial_no='', com_port='', fallback_to_fake=Fals
         raise FindDeviceError(f"Only {available_devices} supported.", Eid)
 
     info = {}
+    temp_info = {}
 
     # Create filters
     device_regexp = "^.*$"
@@ -987,13 +988,15 @@ def find_device(device_type='', serial_no='', com_port='', fallback_to_fake=Fals
                 connection_error_info = sys.exc_info()[1]
                 continue
 
-            info["device"] = cur_device.device_properties
+            temp_info["device"] = cur_device.device_properties
 
             # Check filter
-            device_matches_request = re.match(com_filters['device_regex'], info['device']['Device']) is not None
-            serial_matches_request = re.match(com_filters['sn_regex'], info['device']['Serialno']) is not None
+            device_matches_request = re.match(com_filters['device_regex'], temp_info['device']['Device']) is not None
+            serial_matches_request = re.match(com_filters['sn_regex'], temp_info['device']['Serialno']) is not None
 
+            # save info when a match was found
             if device_matches_request and serial_matches_request:
+                info["device"] = cur_device.device_properties
                 device_hit.append(True)
                 connected_port_list.append(port)
 
@@ -1021,13 +1024,11 @@ def find_device(device_type='', serial_no='', com_port='', fallback_to_fake=Fals
                 device_hit_index = device_hit.index(True)
                 info["com_port"] = connected_port_list[device_hit_index]
 
-        # Check if a connection error happened
+        # Check if connection error happened
         if connection_error:
-            err_msg = f'WARNING during find device: Could not connect to "{connection_error_port}" ' \
-                      f'because: {connection_error_info}. ' \
-                      f'Ignore this warning when multiple devices are used and the device connected to ' \
-                      f'"{connection_error_port}" is already initialized'
-            warnings.warn(err_msg)
+            err_msg = f'Could not connect to "{connection_error_port}" because: {connection_error_info}'
+            Eid = "NoConnection"
+            raise FindDeviceError(err_msg, Eid)
 
     except FindDeviceError as e:
         if fallback_to_fake:

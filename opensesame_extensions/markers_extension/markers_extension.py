@@ -52,7 +52,7 @@ class markers_extension(base_extension):
 				name='var'
 			)
 
-			marker_tags = var.marker_tags
+			marker_tags = var.markers_tags
 
 			md = ''
 			md += u'Time: ' + str(time.ctime()) + u'\n\n'
@@ -62,14 +62,14 @@ class markers_extension(base_extension):
 				# init markdown
 				md += u'#' + str(tag) + u'\n'
 
-				cur_marker_vars = getattr(var, f"marker_vars_{tag}")
+				cur_marker_props = getattr(var, f"markers_prop_{tag}")
 
-				for marker_var in cur_marker_vars:
-					md += u'- ' + str(marker_var) + u': ' + str(cur_marker_vars[marker_var]) + u'\n'
+				for marker_prop in cur_marker_props:
+					md += u'- ' + str(marker_prop) + u': ' + str(cur_marker_props[marker_prop]) + u'\n'
 
-				marker_df = getattr(var, f"marker_table_{tag}")
-				summary_df = getattr(var, f"summary_table_{tag}")
-				error_df = getattr(var, f"error_table_{tag}")
+				marker_df = getattr(var, f"markers_marker_table_{tag}")
+				summary_df = getattr(var, f"markers_summary_table_{tag}")
+				error_df = getattr(var, f"markers_error_table_{tag}")
 
 				# Add summary table to md
 				summary_df = summary_df.round(decimals=3)
