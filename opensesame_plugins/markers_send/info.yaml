@@ -1,5 +1,5 @@
 description: Sends marker to Leiden Univ marker devices.
-version: 0.1
+version: 0.1.1
 author: "Research Support FSW"
 url: "https://github.com/solo-fsw/opensesame_plugin_markers"
 category: "Flow control"
@@ -34,4 +34,4 @@ controls:
     label: ""
 -
     type: "text"
-    label: "OpenSesame Markers plugin v0.1 by Leiden University FSW research support"
+    label: "OpenSesame Markers plugin v0.1.1 by Leiden University FSW research support"
