@@ -6,7 +6,7 @@ This is an OpenSesame plugin for sending markers with Leiden University devices.
 > This plugin is only available for Windows. 
 
 ## Installation
-These installation instructions will install the Markers plugin in the Users folder (C:\Users\%USERNAME%\AppData\Roaming\Python\share). When different users need to use the plugin on one computer, they must all install the plugin separately.
+These installation instructions will install the Markers plugin in the Users folder (C:\Users\\%USERNAME%\AppData\Roaming\Python\share). When different users need to use the plugin on one computer, they must all install the plugin separately.
 
 - Make sure Git is installed.
 
