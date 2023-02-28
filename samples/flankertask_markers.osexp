@@ -1,0 +1,224 @@
+---
+API: 2.1
+OpenSesame: 3.3.12
+Platform: nt
+---
+set width 1024
+set uniform_coordinates yes
+set title "Eriksen Flanker task"
+set subject_parity even
+set subject_nr 0
+set start experiment
+set sound_sample_size -16
+set sound_freq 48000
+set sound_channels 2
+set sound_buf_size 1024
+set sampler_backend psycho
+set round_decimals 2
+set mouse_backend psycho
+set keyboard_backend psycho
+set height 768
+set fullscreen no
+set form_clicks no
+set foreground white
+set font_underline no
+set font_size 32
+set font_italic no
+set font_family mono
+set font_bold no
+set experiment_path "\\\\vuw\\Public\\departments\\FSW\\FAC\\SOLO\\Lab-support\\001 Opdrachten\\lopende projecten Iris\\ALG - OS markers plugin sample task"
+set disable_garbage_collection yes
+set description "A template containing a practice and an experimental phase"
+set coordinates uniform
+set compensation 0
+set color_backend psycho
+set clock_backend psycho
+set canvas_backend psycho
+set bidi yes
+set background black
+
+define loop block_loop
+	set source table
+	set skip 0
+	set repeat 2
+	set order random
+	set offset no
+	set item trial_sequence
+	set description "A single block of trials"
+	set cycles 4
+	set continuous no
+	set column_order ""
+	set break_if_on_first yes
+	set break_if never
+	setcycle 0 stimulus HHHHH
+	setcycle 0 congruent 1
+	setcycle 0 correct_resp h
+	setcycle 0 stimmarker 1
+	setcycle 1 stimulus HHSHH
+	setcycle 1 congruent 0
+	setcycle 1 correct_resp s
+	setcycle 1 stimmarker 2
+	setcycle 2 stimulus SSSSS
+	setcycle 2 congruent 1
+	setcycle 2 correct_resp s
+	setcycle 2 stimmarker 3
+	setcycle 3 stimulus SSHSS
+	setcycle 3 congruent 0
+	setcycle 3 correct_resp h
+	setcycle 3 stimmarker 4
+	run trial_sequence
+
+define sequence block_sequence
+	set flush_keyboard yes
+	set description "A sequence containing a single block of trials followed by feedback to the participant"
+	run reset_feedback always
+	run block_loop always
+	run feedback always
+
+define sketchpad correct_response
+	set duration 0
+	set description "Displays stimuli"
+	draw fixdot color="#00ff00" show_if=always style=default x=0 y=0 z_index=0
+
+define sketchpad end_of_experiment
+	set start_response_interval no
+	set duration keypress
+	set description "A sketchpad notifying the participant that the experiment is finished"
+	draw textline center=1 color=white font_bold=no font_family=mono font_italic=no font_size=18 html=yes show_if=always text="Press any key to exit" x=0 y=0 z_index=0
+
+define loop exp_loop
+	set source_file ""
+	set source table
+	set skip 0
+	set repeat 1
+	set order random
+	set offset no
+	set item block_sequence
+	set description "A loop containing one or more practice blocks"
+	set cycles 1
+	set continuous no
+	set column_order practice
+	set break_if_on_first yes
+	set break_if never
+	setcycle 0 empty_column ""
+	run block_sequence
+
+define sequence experiment
+	set flush_keyboard yes
+	set description "The main sequence of the experiment"
+	run new_markers_init always
+	run instructions always
+	run exp_loop always
+	run end_of_experiment always
+
+define feedback feedback
+	set reset_variables yes
+	set duration keypress
+	set description "Provides feedback to the participant"
+	draw textline center=1 color=white font_bold=no font_family=mono font_italic=no font_size=18 html=yes show_if=always text="Your average response time was [avg_rt]ms<br /><br />Your accuracy was [acc]%" x=0 y=0 z_index=0
+
+define sketchpad fixation
+	set start_response_interval no
+	set duration 200
+	set description "Displays stimuli"
+	draw fixdot color=white show_if=always style=default x=0 y=0 z_index=0
+
+define sketchpad incorrect_response
+	set duration 0
+	set description "Displays stimuli"
+	draw fixdot color="#ff0000" show_if=always style=default x=0 y=0 z_index=0
+
+define sketchpad instructions
+	set start_response_interval no
+	set duration keypress
+	set description "A sketchpad containing the instructions for the participant"
+	draw textline center=1 color=white font_bold=no font_family=mono font_italic=no font_size=18 html=yes show_if=always text="Respond to the letter in the center.  <br /><br />Use the letters S and H on the keyboard to respond.<br /><br />Press any key to begin!" x=0 y=0 z_index=0
+
+define sketchpad isi
+	set duration 500
+	set description "Displays stimuli"
+
+define keyboard_response keyboard_response
+	set timeout 800
+	set flush yes
+	set event_type keypress
+	set duration keypress
+	set description "Collects keyboard responses"
+	set correct_response "[correct_resp]"
+	set allowed_responses "s; h"
+
+define logger logger
+	set description "Logs experimental data"
+	set auto_log yes
+
+define markers_init new_markers_init
+	set marker_gen_mark_file yes
+	set marker_flash_255 no
+	set marker_dummy_mode no
+	set marker_device_tag marker_device_1
+	set marker_device_serial ANY
+	set marker_device_addr ANY
+	set marker_device Eva
+	set marker_crash_on_mark_errors yes
+	set description "Handles communication with Leiden Univ marker devices"
+
+define reset_feedback reset_feedback
+	set description "Resets the feedback variables, such as 'avg_rt' and 'acc'"
+
+define markers_send reset_marker
+	set marker_value 0
+	set marker_reset_to_zero no
+	set marker_object_duration 10
+	set marker_device_tag marker_device_1
+	set description "Handles communication with Leiden Univ marker devices"
+
+define markers_send resp_marker_send
+	set marker_value "[respmarkervalue]"
+	set marker_reset_to_zero yes
+	set marker_object_duration 500
+	set marker_device_tag marker_device_1
+	set description "Handles communication with Leiden Univ marker devices"
+
+define inline_script set_resp_marker
+	set description "Executes Python code"
+	___run__
+	# Marker values:
+	# 7 = no response
+	# 5 = correct
+	# 6 = incorrect
+	if var.response == "None":
+	    var.respmarkervalue = 7
+	elif var.correct == 1:
+	    var.respmarkervalue = 5
+	else:
+	    var.respmarkervalue = 6 
+	__end__
+	set _prepare ""
+
+define markers_send stim_marker_send
+	set marker_value "[stimmarker]"
+	set marker_reset_to_zero no
+	set marker_object_duration 0
+	set marker_device_tag marker_device_1
+	set description "Handles communication with Leiden Univ marker devices"
+
+define sketchpad stimulus
+	set duration 0
+	set description "Displays stimuli"
+	draw textline center=1 color=white font_bold=no font_family=mono font_italic=no font_size=32 html=yes show_if=always text="[stimulus]" x=0 y=0 z_index=0
+
+define sequence trial_sequence
+	set flush_keyboard yes
+	set description "A single trial"
+	run fixation always
+	run stimulus always
+	run stim_marker_send always
+	run keyboard_response always
+	run reset_marker always
+	run set_resp_marker always
+	run correct_response "[correct] == 1"
+	run incorrect_response "[correct] == 0"
+	run resp_marker_send always
+	run isi always
+	run logger always
+
