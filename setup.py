@@ -50,10 +50,10 @@ setup(
 	author='SOLO Research Support FSW Leiden',
 	author_email='labsupport@fsw.leidenuniv.nl',
 	url='https://github.com/solo-fsw/opensesame_plugin_markers',
+	install_requires=["python_markers"],
 	# The important bit that specifies how the plugin files should be installed,
 	# so that they are found by OpenSesame. This is a bit different from normal
 	# Python modules, because an OpenSesame plugin is not a (normal) Python
 	# module.
 	data_files=data_files()
-	install_requires=["python_markers"]
 	)
