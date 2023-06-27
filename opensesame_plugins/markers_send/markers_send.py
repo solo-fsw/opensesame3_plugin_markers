@@ -15,8 +15,6 @@ import re
 import os
 import pandas
 
-import marker_management as mark
-
 
 class markers_send(item):
     """
