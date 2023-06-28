@@ -22,6 +22,9 @@ class markers_send(item):
     functionality of the item. It does not deal with GUI stuff.
     """
 
+    version = 'v0.1.2'
+    description = version + ' - Sends marker to Leiden Univ marker device.'
+
     def reset(self):
 
         """

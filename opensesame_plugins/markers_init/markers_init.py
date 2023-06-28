@@ -24,6 +24,10 @@ class markers_init(item):
     functionality of the item. It does not deal with GUI stuff.
     """
 
+    version = 'v0.1.2'
+    description = version + ' - Initializes Leiden Univ marker device.'
+
+
     def reset(self):
         """
         desc:
