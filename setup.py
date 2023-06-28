@@ -10,7 +10,7 @@ from setuptools import setup
 import os
 import glob
 
-markers_version = '0.1.1'
+markers_version = '0.1.2'
 
 print("Running setup for markers version {}.".format(markers_version))
 
