@@ -24,11 +24,6 @@ class markers_init(item):
     functionality of the item. It does not deal with GUI stuff.
     """
 
-    # Provide an informative description for your plug-in.
-    description = u'Handles communication with Leiden Univ marker devices'
-
-    version = 0.1
-
     def reset(self):
         """
         desc:
