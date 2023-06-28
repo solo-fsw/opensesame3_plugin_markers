@@ -11,7 +11,7 @@ import os
 import glob
 import version_info
 
-print("Running setup for markers version {}.".format(markers_version))
+print("Running setup for markers version {}.".format(version_info.version))
 
 def files(path):
 	
