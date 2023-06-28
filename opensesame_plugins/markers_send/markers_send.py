@@ -15,6 +15,8 @@ import re
 import os
 import pandas
 
+from ..markers_init import version_info
+
 
 class markers_send(item):
     """
@@ -22,7 +24,7 @@ class markers_send(item):
     functionality of the item. It does not deal with GUI stuff.
     """
 
-    version = 'v0.1.2'
+    version = version_info.version
     description = version + ' - Sends marker to Leiden Univ marker device.'
 
     def reset(self):

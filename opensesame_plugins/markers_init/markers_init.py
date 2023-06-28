@@ -16,6 +16,7 @@ import os
 import pandas
 
 from python_markers import marker_management as mark
+import version_info
 
 
 class markers_init(item):
@@ -24,7 +25,7 @@ class markers_init(item):
     functionality of the item. It does not deal with GUI stuff.
     """
 
-    version = 'v0.1.2'
+    version = version_info.version
     description = version + ' - Initializes Leiden Univ marker device.'
 
 
