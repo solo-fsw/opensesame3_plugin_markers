@@ -15,7 +15,7 @@ import re
 import os
 import pandas
 
-from ..markers_init import version_info
+import version_info
 
 
 class markers_send(item):

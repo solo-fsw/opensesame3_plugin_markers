@@ -34,7 +34,9 @@ def data_files():
 		("share/opensesame_extensions/markers_extension",
 		 files("opensesame_extensions/markers_extension/*")),
 		 ("share/opensesame_plugins/markers_init", 
-    	["version_info.py"])
+    	["version_info.py"]),
+		 ("share/opensesame_plugins/markers_send", 
+    	["version_info.py"])	    
 	]
 
 
