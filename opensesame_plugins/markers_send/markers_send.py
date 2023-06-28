@@ -25,7 +25,7 @@ class markers_send(item):
     """
 
     version = version_info.version
-    description = version + ' - Sends marker to Leiden Univ marker device.'
+    description = 'Sends marker to Leiden Univ marker device - Markers plugin ' + version
 
     def reset(self):
 

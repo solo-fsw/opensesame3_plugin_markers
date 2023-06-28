@@ -26,7 +26,7 @@ class markers_init(item):
     """
 
     version = version_info.version
-    description = version + ' - Initializes Leiden Univ marker device.'
+    description = 'Initializes Leiden Univ marker device - Markers plugin ' + version
 
 
     def reset(self):
