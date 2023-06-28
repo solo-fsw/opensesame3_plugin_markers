@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-#-*- coding:utf-8 -*-
-
 """
 Edited from the official example for use with the ParMarker plugin.
 See https://github.com/smathot/opensesame-plugin-example
@@ -10,8 +7,6 @@ from setuptools import setup
 import os
 import glob
 import version_info
-
-print("Running setup for markers version {}.".format(version_info.version))
 
 def files(path):
 	
@@ -35,22 +30,9 @@ def data_files():
 		 files("opensesame_extensions/markers_extension/*")),
 		 ("share/opensesame_plugins/markers_init", 
     	["version_info.py"])
+
 	]
 
+data_files2 = data_files()
+print(data_files2)
 
-setup(
-	# Some general metadata. By convention, a plugin is named:
-	# opensesame-plugin-[plugin name]
-	name=version_info.name,
-	version=version_info.version,
-	description=version_info.description,
-	author=version_info.author,
-	author_email=version_info.author_email,
-	url=version_info.url,
-	install_requires=version_info.install_requires,
-	# The important bit that specifies how the plugin files should be installed,
-	# so that they are found by OpenSesame. This is a bit different from normal
-	# Python modules, because an OpenSesame plugin is not a (normal) Python
-	# module.
-	data_files=data_files()
-	)
