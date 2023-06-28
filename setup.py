@@ -33,10 +33,10 @@ def data_files():
 		 files("opensesame_plugins/markers_init/*")),
 		("share/opensesame_extensions/markers_extension",
 		 files("opensesame_extensions/markers_extension/*")),
-		 ("share/opensesame_plugins/markers_init",
-		"version_info.py")
+
 	]
 
+print(data_files())
 
 setup(
 	# Some general metadata. By convention, a plugin is named:
