@@ -13,9 +13,9 @@ Generally, only a single markers_init item is required. If you wish to use multi
 
 - **Marker device:** The marker device type that should be used: [UsbParMarker](https://researchwiki.solo.universiteitleiden.nl/xwiki/wiki/researchwiki.solo.universiteitleiden.nl/view/Hardware/Markers%20and%20Events/UsbParMarker/), [Eva](https://researchwiki.solo.universiteitleiden.nl/xwiki/wiki/researchwiki.solo.universiteitleiden.nl/view/Hardware/Markers%20and%20Events/EVA/) or ANY (ANY searchers for any device available).
 
-- **Device address:** The address of the port the marker device is connected to. This should be a COM address (e.g. COM1). If unknown, leave at ANY and the address will be found automatically.
+- **Device address:** The address of the port the marker device is connected to. This should be a COM address (e.g. COM1). If unknown, leave at ANY or leave empty and the address will be found automatically.
 
-- **Device serial number:** The serial number of the marker device. If unknown, leave at ANY and the address will be found automatically. 
+- **Device serial number:** The serial number of the marker device. If unknown, leave at ANY or leave empty and the address will be found automatically. 
 
 - **Crash on marker errors:** When checked, the task will crash on marker errors. If unchecked, the task will not crash, but the errors will be stored in a table, which can be viewed in the *Marker tables* tab at the end of the experiment, or in the marker_table TSV file that is saved when checking the *Generate marker* file setting. Marker errors consist of the following: 
     - The marker duration is too short (< 10 ms)

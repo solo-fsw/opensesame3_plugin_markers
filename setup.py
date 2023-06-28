@@ -9,8 +9,7 @@ See https://github.com/smathot/opensesame-plugin-example
 from setuptools import setup
 import os
 import glob
-
-markers_version = '0.1.2'
+import version_info
 
 print("Running setup for markers version {}.".format(markers_version))
 
@@ -32,25 +31,23 @@ def data_files():
 		 files("opensesame_plugins/markers_send/*")),
 		("share/opensesame_plugins/markers_init",
 		 files("opensesame_plugins/markers_init/*")),
-		("share/opensesame_plugins/markers_send/utils",
-		 files("opensesame_plugins/markers_send/utils/*")),
-		("share/opensesame_plugins/markers_init/utils",
-		 files("opensesame_plugins/markers_init/utils/*")),
 		("share/opensesame_extensions/markers_extension",
-		 files("opensesame_extensions/markers_extension/*"))
+		 files("opensesame_extensions/markers_extension/*")),
+		 ("share/opensesame_plugins/markers_init",
+		"version_info.py")
 	]
 
 
 setup(
 	# Some general metadata. By convention, a plugin is named:
 	# opensesame-plugin-[plugin name]
-	name='opensesame-plugin-markers',
-	version=markers_version,
-	description='Plugin for controlling Leiden Univ marker devices.',
-	author='SOLO Research Support FSW Leiden',
-	author_email='labsupport@fsw.leidenuniv.nl',
-	url='https://github.com/solo-fsw/opensesame_plugin_markers',
-	install_requires='marker-management @ git+https://github.com/solo-fsw/python-markers.git@b89a9fb2ca53f9277c7d1f99ec05f1085bbe6ce3',
+	name=version_info.name,
+	version=version_info.version,
+	description=version_info.description,
+	author=version_info.author,
+	author_email=version_info.author_email,
+	url=version_info.url,
+	install_requires=version_info.install_requires,
 	# The important bit that specifies how the plugin files should be installed,
 	# so that they are found by OpenSesame. This is a bit different from normal
 	# Python modules, because an OpenSesame plugin is not a (normal) Python
