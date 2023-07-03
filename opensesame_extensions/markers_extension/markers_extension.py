@@ -1,6 +1,7 @@
 #-*- coding:utf-8 -*-
 
 """
+OpenSesame extension for creating a tab with the marker tables after the experiment is finished.
 """
 
 import time
@@ -19,7 +20,7 @@ class markers_extension(base_extension):
 
 	"""
 	desc:
-		Shows marker tables after an experiment has finished.
+		Shows marker tables in separate tab after an experiment has finished.
 	"""
 
 	def event_end_experiment(self, ret_val):
@@ -43,7 +44,7 @@ class markers_extension(base_extension):
 
 		"""
 		desc:
-			Shows marker tables after completion of the experiment.
+			Prints marker tables in md file that is shown in tab after the experiment.
 		"""
 
 		try:
@@ -52,21 +53,24 @@ class markers_extension(base_extension):
 				name='var'
 			)
 
+			# Get tag(s) of marker device(s)
 			marker_tags = var.markers_tags
 
+			# Init markdown, print basic header info
 			md = ''
 			md += u'Time: ' + str(time.ctime()) + u'\n\n'
 
+			# Append marker tables of each marker device:
 			for tag in marker_tags:
 
-				# init markdown
+				# Print marker device properties
 				md += u'#' + str(tag) + u'\n'
-
 				cur_marker_props = getattr(var, f"markers_prop_{tag}")
 
 				for marker_prop in cur_marker_props:
 					md += u'- ' + str(marker_prop) + u': ' + str(cur_marker_props[marker_prop]) + u'\n'
 
+				# Get marker tables
 				marker_df = getattr(var, f"markers_marker_table_{tag}")
 				summary_df = getattr(var, f"markers_summary_table_{tag}")
 				error_df = getattr(var, f"markers_error_table_{tag}")
@@ -75,13 +79,14 @@ class markers_extension(base_extension):
 				summary_df = summary_df.round(decimals=3)
 				md = add_table_to_md(md, summary_df, 'Summary table')
 
-				# # Add marker table to md
+				# Add marker table to md
 				marker_df = marker_df.round(decimals=3)
 				md = add_table_to_md(md, marker_df, 'Marker table')
 
 				# Add error table to md
 				md = add_table_to_md(md, error_df, 'Error table')
 
+			# Open the tab
 			self.tabwidget.open_markdown(md, u'os-finished-success', u'Marker tables')
 
 		# AttributeErorr occurs when the tables do not exist and thus no markers were sent. In that case, do nothing.
@@ -90,6 +95,8 @@ class markers_extension(base_extension):
 
 
 def add_table_to_md(md, df, table_title):
+
+	# Table title
 	md += u'##' + table_title + u':##' + u'\n'
 
 	ncols = len(df.columns)

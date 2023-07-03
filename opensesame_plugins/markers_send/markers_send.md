@@ -24,7 +24,7 @@ Generally, only a single markers_init item is required. If you wish to use multi
 
 - **Dummy mode:** When checked, dummy mode is used and no actual device needs to be connected to the computer. Use for development.
 
-- **Generate marker file:** When checked, a TSV file will be saved that contains a marker summary table, a marker table and an error table (the same tables can be viewed at the end of the experiment in the Marker tables tab). This TSV file will be saved in the same location as the OpenSesame task.
+- **Generate marker file:** When checked, a TSV file will be saved that contains a marker summary table, a marker table and an error table (the same tables can be viewed at the end of the experiment in the Marker tables tab). This TSV file will be saved in the same location as the log file.
 
 - **Flash 255:** When checked, two pulses with value 255 (all bits high), each with a duration of 100 ms will be sent when initializing the marker device. Note: use with caution in combination with the BioSemi EEG system! The value 255 can unintentially pause the recording.
 

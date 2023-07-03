@@ -1,8 +1,7 @@
 # -*- coding:utf-8 -*-
 
 """
-No rights reserved. All files in this repository are released into the public
-domain.
+OpenSesame plugin for initializing a Leiden Univ Marker device.
 """
 
 from libopensesame.py3compat import *
@@ -21,8 +20,7 @@ import version_info
 
 class markers_init(item):
     """
-    This class (the class with the same name as the module) handles the basic
-    functionality of the item. It does not deal with GUI stuff.
+    This class handles the basic functionality of the item.
     """
 
     version = version_info.version
@@ -173,7 +171,7 @@ class markers_init(item):
                                             time_function_ms=lambda: self.time())
         self.set_marker_manager_var(marker_manager)
 
-        # Create marker_vars (dict with marker manager variables)
+        # Create marker_prop (dict with marker manager properties)
         marker_prop = marker_manager.device_properties
         self.set_marker_prop_var(marker_prop)
 
@@ -204,7 +202,7 @@ class markers_init(item):
 
         # Generate and save marker file in same location as the logfile
         if self.var.marker_gen_mark_file == u'yes':
-            log_location= os.path.dirname(os.path.abspath(self.experiment.logfile))
+            log_location = os.path.dirname(os.path.abspath(self.experiment.logfile))
             try:
                 full_filename = 'subject-' + str(self.experiment.var.subject_nr) + '_' + self.get_tag_gui() + '_marker_table'
                 self.get_marker_manager_var().save_marker_table(filename=full_filename,
@@ -236,6 +234,11 @@ class markers_init(item):
             pass
 
     def resolve_com_port(self):
+
+        """
+        desc:
+            Resolves which com port the marker device is connected to.
+        """        
 
         if self.get_device_gui() == 'ANY':
             device_type = ''

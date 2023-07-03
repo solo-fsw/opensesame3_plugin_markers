@@ -1,8 +1,7 @@
 # -*- coding:utf-8 -*-
 
 """
-No rights reserved. All files in this repository are released into the public
-domain.
+OpenSesame plugin for sending markers to Leiden Univ Marker device.
 """
 
 from libopensesame.py3compat import *
@@ -20,8 +19,7 @@ import version_info
 
 class markers_send(item):
     """
-    This class (the class with the same name as the module) handles the basic
-    functionality of the item. It does not deal with GUI stuff.
+    This class handles the basic functionality of the item.
     """
 
     version = version_info.version
@@ -63,12 +61,16 @@ class markers_send(item):
             Prepare phase.
         """
 
-        # Check input of plugin:
+        # Check input of plugin (tag only):
         device_tag = self.get_tag()
         if not(bool(re.match("^[A-Za-z0-9_-]*$", device_tag)) and bool(re.match("^[A-Za-z]*$", device_tag[0]))):
             # Raise error, tag can only contain: letters, numbers, underscores and dashes and should start with letter.
             raise osexception("Device tag can only contain letters, numbers, underscores and dashes "
                               "and should start with a letter.")
+        
+        # Marker value is checked by marker_management
+
+        # Todo: check Marker duration
 
         # Call the parent constructor.
         item.prepare(self)
@@ -80,8 +82,9 @@ class markers_send(item):
             Run phase.
         """
 
+        # Check if the marker device is initialized
         if not self.is_already_init():
-            raise osexception("You must have a marker object in initialize mode before sending markers."
+            raise osexception("You must have a markers_init item before sending markers."
                               " Make sure the Device tags match.")
 
         # Send marker:
@@ -93,7 +96,7 @@ class markers_send(item):
         # Sleep for object duration (blocking)
         self.sleep(int(self.var.marker_object_duration))
 
-        # Reset marker value to zero, if specified:
+        # Reset marker value to zero, if specified
         if self.var.marker_object_duration > 5 and self.var.marker_reset_to_zero == 'yes':
 
             try:
@@ -123,8 +126,7 @@ class qtmarkers_send(markers_send, qtautoplugin):
         script		--	A definition script. (default=None)
         """
 
-        # We don't need to do anything here, except call the parent
-        # constructors.
+        # Call the parent constructors.
         markers_send.__init__(self, name, experiment, script)
         qtautoplugin.__init__(self, __file__)
 
@@ -176,3 +178,4 @@ class qtmarkers_send(markers_send, qtautoplugin):
         desc:
             Activates the relevant controls for each setting.
         """
+        
