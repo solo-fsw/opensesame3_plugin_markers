@@ -157,7 +157,8 @@ define markers_init new_markers_init
 	set marker_dummy_mode no
 	set marker_device_tag marker_device_1
 	set marker_device_serial ANY
-	set marker_device Eva
+	set marker_device_addr ANY
+	set marker_device ANY
 	set marker_crash_on_mark_errors yes
 	set description "Handles communication with Leiden Univ marker devices"
 
