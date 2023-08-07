@@ -119,7 +119,7 @@ def add_table_to_md(md, df, table_title):
 	# Header separator
 	md += u'|'
 	for col in range(ncols):
-		md += u'---|'
+		md += u':---|'
 	md += u'\n'
 
 	# Values
