@@ -41,6 +41,12 @@ class markers_send(item):
 
     def get_value(self):
         return self.var.marker_value
+    
+    def get_duration(self):
+        return self.var.marker_object_duration
+    
+    def get_reset_to_zero(self):
+        return self.var.marker_reset_to_zero == u'yes'    
 
     def is_already_init(self):
         try:
@@ -61,7 +67,7 @@ class markers_send(item):
             Prepare phase.
         """
 
-        # Check input of plugin (tag only):
+        # Check input of plugin:
         device_tag = self.get_tag()
         if not(bool(re.match("^[A-Za-z0-9_-]*$", device_tag)) and bool(re.match("^[A-Za-z]*$", device_tag[0]))):
             # Raise error, tag can only contain: letters, numbers, underscores and dashes and should start with letter.
@@ -70,7 +76,11 @@ class markers_send(item):
         
         # Marker value is checked by marker_management
 
-        # Todo: check Marker duration
+        # Check Marker duration
+        if not(isinstance(self.get_duration(), int) and not(isinstance(self.get_duration(), float))):
+            raise osexception("Object duration should be numeric")
+        elif self.get_duration() < 0:
+            raise osexception("Object duration must be a positive number")
 
         # Call the parent constructor.
         item.prepare(self)
@@ -89,15 +99,15 @@ class markers_send(item):
 
         # Send marker:
         try:
-            self.get_marker_manager().set_value(int(self.var.marker_value))
+            self.get_marker_manager().set_value(int(self.get_value()))
         except:
-            raise osexception(f"Error sending marker with value {self.var.marker_value}: {sys.exc_info()[1]}")
+            raise osexception(f"Error sending marker with value {self.get_value()}: {sys.exc_info()[1]}")
 
         # Sleep for object duration (blocking)
-        self.sleep(int(self.var.marker_object_duration))
+        self.sleep(int(self.get_duration()))
 
         # Reset marker value to zero, if specified
-        if self.var.marker_object_duration > 5 and self.var.marker_reset_to_zero == 'yes':
+        if self.get_duration() > 5 and self.get_reset_to_zero:
 
             try:
                 self.get_marker_manager().set_value(0)
