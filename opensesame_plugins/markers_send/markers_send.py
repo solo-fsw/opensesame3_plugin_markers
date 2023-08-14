@@ -107,7 +107,7 @@ class markers_send(item):
         self.sleep(int(self.get_duration()))
 
         # Reset marker value to zero, if specified
-        if self.get_duration() > 5 and self.get_reset_to_zero:
+        if self.get_duration() > 5 and self.get_reset_to_zero():
 
             try:
                 self.get_marker_manager().set_value(0)

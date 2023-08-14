@@ -53,45 +53,49 @@ class markers_extension(base_extension):
 				name='var'
 			)
 
-			# Get tag(s) of marker device(s)
-			marker_tags = var.markers_tags
+			if hasattr(var, 'markers_tags'):
 
-			# Init markdown, print basic header info
-			md = ''
-			md += u'Time: ' + str(time.ctime()) + u'\n\n'
+				# Get tag(s) of marker device(s)
+				marker_tags = var.markers_tags
 
-			# Append marker tables of each marker device:
-			for tag in marker_tags:
+				# Init markdown, print basic header info
+				md = ''
+				md += u'Time: ' + str(time.ctime()) + u'\n\n'
 
-				# Print marker device properties
-				md += u'#' + str(tag) + u'\n'
-				cur_marker_props = getattr(var, f"markers_prop_{tag}")
+				# Append marker tables of each marker device:
+				for tag in marker_tags:
 
-				for marker_prop in cur_marker_props:
-					md += u'- ' + str(marker_prop) + u': ' + str(cur_marker_props[marker_prop]) + u'\n'
+					# Print marker device properties
+					md += u'#' + str(tag) + u'\n'
+					cur_marker_props = getattr(var, f"markers_prop_{tag}")
 
-				# Get marker tables
-				marker_df = getattr(var, f"markers_marker_table_{tag}")
-				summary_df = getattr(var, f"markers_summary_table_{tag}")
-				error_df = getattr(var, f"markers_error_table_{tag}")
+					for marker_prop in cur_marker_props:
+						md += u'- ' + str(marker_prop) + u': ' + str(cur_marker_props[marker_prop]) + u'\n'
 
-				# Add summary table to md
-				summary_df = summary_df.round(decimals=3)
-				md = add_table_to_md(md, summary_df, 'Summary table')
+					# Get marker tables
+					marker_df = getattr(var, f"markers_marker_table_{tag}")
+					summary_df = getattr(var, f"markers_summary_table_{tag}")
+					error_df = getattr(var, f"markers_error_table_{tag}")
 
-				# Add marker table to md
-				marker_df = marker_df.round(decimals=3)
-				md = add_table_to_md(md, marker_df, 'Marker table')
+					# Add summary table to md
+					summary_df = summary_df.round(decimals=3)
+					md = add_table_to_md(md, summary_df, 'Summary table')
 
-				# Add error table to md
-				md = add_table_to_md(md, error_df, 'Error table')
+					# Add marker table to md
+					marker_df = marker_df.round(decimals=3)
+					md = add_table_to_md(md, marker_df, 'Marker table')
 
-			# Open the tab
-			self.tabwidget.open_markdown(md, u'os-finished-success', u'Marker tables')
+					# Add error table to md
+					md = add_table_to_md(md, error_df, 'Error table')
 
-		# AttributeErorr occurs when the tables do not exist and thus no markers were sent. In that case, do nothing.
-		except AttributeError:
-			pass
+				# Open the tab
+				self.tabwidget.open_markdown(md, u'os-finished-success', u'Marker tables')
+
+		# Occasionally, something goes wrong getting the marker tables
+		except:
+
+			md += u'\n\nSomething went wrong generating the marker tables. This can happen when the experiment was aborted. Check the marker_table.tsv file for marker info.'
+			self.tabwidget.open_markdown(md, u'os-finished-user-interrupt', u'Marker tables')
 
 
 def add_table_to_md(md, df, table_title):
