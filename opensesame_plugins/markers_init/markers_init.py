@@ -132,10 +132,6 @@ class markers_init(item):
             # Raise error when marker address is not a proper COM address.
             raise osexception(f"Incorrect marker device address: {device_address}")
 
-        if self.is_already_init():
-            # Raise error since you cannot init twice.
-            raise osexception("Marker device already initialized.")
-
         # Add tag to marker manager tag list:
         self.set_marker_manager_tag_var()
 
@@ -163,6 +159,10 @@ class markers_init(item):
 
         device = self.get_device_var()
         com_port = self.get_com_port_var()
+
+        if self.is_already_init():
+            # Raise error since you cannot init twice.
+            raise osexception("Marker device already initialized.")
 
         # Build marker manager:
         marker_manager = mark.MarkerManager(device_type=device,
