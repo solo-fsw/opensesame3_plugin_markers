@@ -115,7 +115,7 @@ class markers_send(item):
                 raise osexception(f"Error sending marker with value 0: {sys.exc_info()[1]}")
 
         self.set_item_onset()
-
+        
 
 class qtmarkers_send(markers_send, qtautoplugin):
     """

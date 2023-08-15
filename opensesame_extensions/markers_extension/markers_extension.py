@@ -14,6 +14,7 @@ from libopensesame import misc
 from libqtopensesame.misc.translate import translation_context
 import markdown
 import pandas
+import sys
 
 
 class markers_extension(base_extension):
@@ -94,9 +95,10 @@ class markers_extension(base_extension):
 		# Occasionally, something goes wrong getting the marker tables
 		except:
 
-			md += u'\n\nSomething went wrong generating the marker tables. This can happen when the experiment was aborted. Check the marker_table.tsv file for marker info.'
+			md += f'\n\nError: {sys.exc_info()[1]}'
+			md += u'\n\nSomething went wrong generating the marker tables. This happens when no actual markers were sent (or only value 0) or, occasionally, when the experiment was aborted.'
 			self.tabwidget.open_markdown(md, u'os-finished-user-interrupt', u'Marker tables')
-
+			
 
 def add_table_to_md(md, df, table_title):
 
