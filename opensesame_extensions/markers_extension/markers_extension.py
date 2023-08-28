@@ -82,12 +82,21 @@ class markers_extension(base_extension):
 					summary_df = summary_df.round(decimals=3)
 					md = add_table_to_md(md, summary_df, 'Summary table')
 
+					if summary_df.empty:
+						md += u'No markers were sent, summary table empty\n\n'
+
 					# Add marker table to md
 					marker_df = marker_df.round(decimals=3)
 					md = add_table_to_md(md, marker_df, 'Marker table')
 
+					if marker_df.empty:
+						md += u'No markers were sent, marker table empty\n\n'
+
 					# Add error table to md
 					md = add_table_to_md(md, error_df, 'Error table')
+
+					if error_df.empty:
+						md += u'No marker errors occurred, error table empty\n\n'
 
 				# Open the tab
 				self.tabwidget.open_markdown(md, u'os-finished-success', u'Marker tables')
