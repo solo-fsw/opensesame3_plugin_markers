@@ -105,7 +105,7 @@ class markers_extension(base_extension):
 		except:
 
 			md += f'\n\nError: {sys.exc_info()[1]}'
-			md += u'\n\nSomething went wrong generating the marker tables. This happens when no actual markers were sent (or only value 0) or, occasionally, when the experiment was aborted.'
+			md += u'\n\nSomething went wrong while generating the marker tables. This can happen when the experiment is aborted or the experiment crashed.'
 			self.tabwidget.open_markdown(md, u'os-finished-user-interrupt', u'Marker tables')
 			
 
