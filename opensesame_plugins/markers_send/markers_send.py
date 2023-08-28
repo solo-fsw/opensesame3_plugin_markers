@@ -1,8 +1,7 @@
 # -*- coding:utf-8 -*-
 
 """
-No rights reserved. All files in this repository are released into the public
-domain.
+OpenSesame plugin for sending markers to Leiden Univ Marker device.
 """
 
 from libopensesame.py3compat import *
@@ -15,17 +14,16 @@ import re
 import os
 import pandas
 
-import marker_management as mark
+import version_info
 
 
 class markers_send(item):
     """
-    This class (the class with the same name as the module) handles the basic
-    functionality of the item. It does not deal with GUI stuff.
+    This class handles the basic functionality of the item.
     """
 
-    # Provide an informative description for your plug-in.
-    description = u'Handles communication with Leiden Univ marker devices'
+    version = version_info.version
+    description = 'Sends marker to Leiden Univ marker device - Markers plugin ' + version
 
     def reset(self):
 
@@ -43,6 +41,12 @@ class markers_send(item):
 
     def get_value(self):
         return self.var.marker_value
+    
+    def get_duration(self):
+        return self.var.marker_object_duration
+    
+    def get_reset_to_zero(self):
+        return self.var.marker_reset_to_zero == u'yes'    
 
     def is_already_init(self):
         try:
@@ -69,6 +73,14 @@ class markers_send(item):
             # Raise error, tag can only contain: letters, numbers, underscores and dashes and should start with letter.
             raise osexception("Device tag can only contain letters, numbers, underscores and dashes "
                               "and should start with a letter.")
+        
+        # Marker value is checked by marker_management
+
+        # Check Marker duration
+        if not(isinstance(self.get_duration(), int) and not(isinstance(self.get_duration(), float))):
+            raise osexception("Object duration should be numeric")
+        elif self.get_duration() < 0:
+            raise osexception("Object duration must be a positive number")
 
         # Call the parent constructor.
         item.prepare(self)
@@ -80,21 +92,22 @@ class markers_send(item):
             Run phase.
         """
 
+        # Check if the marker device is initialized
         if not self.is_already_init():
-            raise osexception("You must have a marker object in initialize mode before sending markers."
+            raise osexception("You must have a markers_init item before sending markers."
                               " Make sure the Device tags match.")
 
         # Send marker:
         try:
-            self.get_marker_manager().set_value(int(self.var.marker_value))
+            self.get_marker_manager().set_value(int(self.get_value()))
         except:
-            raise osexception(f"Error sending marker with value {self.var.marker_value}: {sys.exc_info()[1]}")
+            raise osexception(f"Error sending marker with value {self.get_value()}: {sys.exc_info()[1]}")
 
         # Sleep for object duration (blocking)
-        self.sleep(int(self.var.marker_object_duration))
+        self.sleep(int(self.get_duration()))
 
-        # Reset marker value to zero, if specified:
-        if self.var.marker_object_duration > 5 and self.var.marker_reset_to_zero == 'yes':
+        # Reset marker value to zero, if specified
+        if self.get_duration() > 5 and self.get_reset_to_zero():
 
             try:
                 self.get_marker_manager().set_value(0)
@@ -102,7 +115,7 @@ class markers_send(item):
                 raise osexception(f"Error sending marker with value 0: {sys.exc_info()[1]}")
 
         self.set_item_onset()
-
+        
 
 class qtmarkers_send(markers_send, qtautoplugin):
     """
@@ -123,8 +136,7 @@ class qtmarkers_send(markers_send, qtautoplugin):
         script		--	A definition script. (default=None)
         """
 
-        # We don't need to do anything here, except call the parent
-        # constructors.
+        # Call the parent constructors.
         markers_send.__init__(self, name, experiment, script)
         qtautoplugin.__init__(self, __file__)
 
@@ -176,3 +188,4 @@ class qtmarkers_send(markers_send, qtautoplugin):
         desc:
             Activates the relevant controls for each setting.
         """
+        

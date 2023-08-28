@@ -1,8 +1,7 @@
 # -*- coding:utf-8 -*-
 
 """
-No rights reserved. All files in this repository are released into the public
-domain.
+OpenSesame plugin for initializing a Leiden Univ Marker device.
 """
 
 from libopensesame.py3compat import *
@@ -15,19 +14,18 @@ import re
 import os
 import pandas
 
-import marker_management as mark
+from python_markers import marker_management as mark
+import version_info
 
 
 class markers_init(item):
     """
-    This class (the class with the same name as the module) handles the basic
-    functionality of the item. It does not deal with GUI stuff.
+    This class handles the basic functionality of the item.
     """
 
-    # Provide an informative description for your plug-in.
-    description = u'Handles communication with Leiden Univ marker devices'
+    version = version_info.version
+    description = 'Initializes Leiden Univ marker device - Markers plugin ' + version
 
-    version = 0.1
 
     def reset(self):
         """
@@ -134,10 +132,6 @@ class markers_init(item):
             # Raise error when marker address is not a proper COM address.
             raise osexception(f"Incorrect marker device address: {device_address}")
 
-        if self.is_already_init():
-            # Raise error since you cannot init twice.
-            raise osexception("Marker device already initialized.")
-
         # Add tag to marker manager tag list:
         self.set_marker_manager_tag_var()
 
@@ -166,16 +160,19 @@ class markers_init(item):
         device = self.get_device_var()
         com_port = self.get_com_port_var()
 
-        # Build serial manager:
+        if self.is_already_init():
+            # Raise error since you cannot init twice.
+            raise osexception("Marker device already initialized.")
+
+        # Build marker manager:
         marker_manager = mark.MarkerManager(device_type=device,
                                             device_address=com_port,
                                             crash_on_marker_errors=self.get_crash_on_mark_error_gui(),
                                             time_function_ms=lambda: self.time())
         self.set_marker_manager_var(marker_manager)
 
-        # Create marker_vars (dict with marker manager variables)
+        # Create marker_prop (dict with marker manager properties)
         marker_prop = marker_manager.device_properties
-
         self.set_marker_prop_var(marker_prop)
 
         # Flash 255
@@ -203,13 +200,18 @@ class markers_init(item):
         self.get_marker_manager_var().set_value(0)
         self.sleep(100)
 
-        # Generate and save marker file
+        # Generate and save marker file in same location as the logfile
         if self.var.marker_gen_mark_file == u'yes':
-            full_filename = 'subject-' + str(self.experiment.var.subject_nr) + '_' + self.get_tag_gui() + '_marker_table'
-            self.get_marker_manager_var().save_marker_table(filename=full_filename,
-                                                        location=self.experiment.experiment_path,
-                                                        more_info={'Device tag': self.get_tag_gui(),
-                                                                   'Subject': self.experiment.var.subject_nr})
+            log_location = os.path.dirname(os.path.abspath(self.experiment.logfile))
+            try:
+                full_filename = 'subject-' + str(self.experiment.var.subject_nr) + '_' + self.get_tag_gui() + '_marker_table'
+                self.get_marker_manager_var().save_marker_table(filename=full_filename,
+                                                            location=log_location,
+                                                            more_info={'Device tag': self.get_tag_gui(),
+                                                                    'Subject': self.experiment.var.subject_nr})
+            except:
+                print("WARNING: Could not save marker file.")
+
 
         # Close marker device:
         self.close()
@@ -232,6 +234,11 @@ class markers_init(item):
             pass
 
     def resolve_com_port(self):
+
+        """
+        desc:
+            Resolves which com port the marker device is connected to.
+        """        
 
         if self.get_device_gui() == 'ANY':
             device_type = ''

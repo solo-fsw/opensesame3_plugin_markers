@@ -1,6 +1,4 @@
-description: Sends marker to Leiden Univ marker devices.
-version: 0.1.1
-author: "Research Support FSW"
+author: "SOLO Research Support FSW Leiden"
 url: "https://github.com/solo-fsw/opensesame_plugin_markers"
 category: "Flow control"
 date: "2022"
@@ -29,9 +27,3 @@ controls:
     label: "Reset marker value to zero"
     name: "marker_reset_to_zero_widget"
     info: "When checked, the marker value will reset to zero after the Object duration (duration must be > 5 ms)."
--
-    type: "text"
-    label: ""
--
-    type: "text"
-    label: "OpenSesame Markers plugin v0.1.1 by Leiden University FSW research support"

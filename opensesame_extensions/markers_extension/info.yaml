@@ -1,5 +1,3 @@
-description: Handles communication with Leiden Univ marker devices.
-version: 0.1
-author: "Research Support FSW"
+author: "SOLO Research Support FSW Leiden"
 url: "https://github.com/solo-fsw/opensesame_plugin_markers"
 type: "extensions"

@@ -1,6 +1,4 @@
-description: Initializes Leiden Univ marker devices.
-version: 0.1.1
-author: "Research Support FSW"
+author: "SOLO Research Support FSW Leiden"
 url: "https://github.com/solo-fsw/opensesame_plugin_markers"
 category: "Flow control"
 date: "2022"
@@ -57,9 +55,3 @@ controls:
     label: "Flash 255"
     name: "marker_flash_255_widget"
     info: "When checked, two pulses with a value of 255 will be sent on initialization. Do not use with Actiview as pulses with value 255 may pause the recording."
--
-    type: "text"
-    label: ""
--
-    type: "text"
-    label: "OpenSesame Markers plugin v0.1.1 by Leiden University FSW research support"
