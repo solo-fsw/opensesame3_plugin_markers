@@ -7,6 +7,5 @@ url = "https://github.com/solo-fsw/opensesame_plugin_markers"
 author = "SOLO Research Support FSW Leiden"
 author_email = "labsupport@FSW.leidenuniv.nl"
 install_requires=[
-    "python>=3.7",
     "python-opensesame>=3.3, <4",
     "marker-management @ git+https://github.com/solo-fsw/python-markers.git@7dd3cfa27125116d15c213f05673bd1c9757100a"]
