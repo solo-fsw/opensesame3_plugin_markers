@@ -11,7 +11,7 @@ These installation instructions will install the Markers plugin in the Users fol
 
 - In OpenSesame, run from the Console:
 
-    `!pip install --user git+https://github.com/solo-fsw/opensesame_plugin_markers`
+    `!pip install --user git+https://github.com/solo-fsw/opensesame3_plugin_markers`
 
 - Restart OpenSesame. 
 
