@@ -2,6 +2,7 @@
 This is an OpenSesame plugin for sending markers with Leiden University devices. 
 
 > **Note**
+> This plugin is only available for OpenSesame 3.
 > This plugin is only available for Windows. 
 
 ## Installation
