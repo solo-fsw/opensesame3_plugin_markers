@@ -2,7 +2,7 @@
 #-*- coding:utf-8 -*-
 
 """
-Edited from the official example for use with the ParMarker plugin.
+Edited from the official example for markers plugin.
 See https://github.com/smathot/opensesame-plugin-example
 """
 
@@ -11,7 +11,7 @@ import os
 import glob
 import version_info
 
-print("Running setup for markers version {}.".format(version_info.version))
+print("Running setup for markers_os3 version {}.".format(version_info.version))
 
 def files(path):
 	
@@ -27,15 +27,15 @@ def data_files():
 
 	# Return the target folders and their respective data files:
 	return [
-		("share/opensesame_plugins/markers_send",
-		 files("opensesame_plugins/markers_send/*")),
-		("share/opensesame_plugins/markers_init",
-		 files("opensesame_plugins/markers_init/*")),
-		("share/opensesame_extensions/markers_extension",
-		 files("opensesame_extensions/markers_extension/*")),
-		 ("share/opensesame_plugins/markers_init", 
+		("share/opensesame_plugins/markers_os3_send",
+		 files("opensesame_plugins/markers_os3_send/*")),
+		("share/opensesame_plugins/markers_os3_init",
+		 files("opensesame_plugins/markers_os3_init/*")),
+		("share/opensesame_extensions/markers_os3_extension",
+		 files("opensesame_extensions/markers_os3_extension/*")),
+		 ("share/opensesame_plugins/markers_os3_init", 
     	["version_info.py"]),
-		 ("share/opensesame_plugins/markers_send", 
+		 ("share/opensesame_plugins/markers_os3_send", 
     	["version_info.py"])	    
 	]
 

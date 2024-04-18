@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 """
-OpenSesame plugin for initializing a Leiden Univ Marker device.
+OpenSesame 3 plugin for initializing a Leiden Univ Marker device.
 """
 
 from libopensesame.py3compat import *
@@ -17,7 +17,7 @@ import pandas
 from python_markers import marker_management as mark
 
 
-class markers_init(item):
+class markers_os3_init(item):
     """
     This class handles the basic functionality of the item.
     """
@@ -264,7 +264,7 @@ class markers_init(item):
         return device_info
 
 
-class qtmarkers_init(markers_init, qtautoplugin):
+class qtmarkers_os3_init(markers_os3_init, qtautoplugin):
     """
     This class handles the GUI aspect of the plug-in. By using qtautoplugin, we
     usually need to do hardly anything, because the GUI is defined in info.json.
@@ -285,7 +285,7 @@ class qtmarkers_init(markers_init, qtautoplugin):
 
         # We don't need to do anything here, except call the parent
         # constructors.
-        markers_init.__init__(self, name, experiment, script)
+        markers_os3_init.__init__(self, name, experiment, script)
         qtautoplugin.__init__(self, __file__)
 
     def init_edit_widget(self):

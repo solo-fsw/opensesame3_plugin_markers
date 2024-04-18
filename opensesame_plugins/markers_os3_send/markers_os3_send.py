@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 """
-OpenSesame plugin for sending markers to Leiden Univ Marker device.
+OpenSesame 3 plugin for sending markers to Leiden Univ Marker device.
 """
 
 from libopensesame.py3compat import *
@@ -15,7 +15,7 @@ import os
 import pandas
 
 
-class markers_send(item):
+class markers_os3_send(item):
     """
     This class handles the basic functionality of the item.
     """
@@ -91,7 +91,7 @@ class markers_send(item):
 
         # Check if the marker device is initialized
         if not self.is_already_init():
-            raise osexception("You must have a markers_init item before sending markers."
+            raise osexception("You must have a markers_os3_init item before sending markers."
                               " Make sure the Device tags match.")
 
         # Send marker:
@@ -114,7 +114,7 @@ class markers_send(item):
         self.set_item_onset()
         
 
-class qtmarkers_send(markers_send, qtautoplugin):
+class qtmarkers_os3_send(markers_os3_send, qtautoplugin):
     """
     This class handles the GUI aspect of the plug-in. By using qtautoplugin, we
     usually need to do hardly anything, because the GUI is defined in info.json.
@@ -134,7 +134,7 @@ class qtmarkers_send(markers_send, qtautoplugin):
         """
 
         # Call the parent constructors.
-        markers_send.__init__(self, name, experiment, script)
+        markers_os3_send.__init__(self, name, experiment, script)
         qtautoplugin.__init__(self, __file__)
 
     def init_edit_widget(self):

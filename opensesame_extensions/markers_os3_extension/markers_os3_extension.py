@@ -2,6 +2,7 @@
 
 """
 OpenSesame extension for creating a tab with the marker tables after the experiment is finished.
+Part of the markers_os3 plugin.
 """
 
 import time
@@ -17,7 +18,7 @@ import pandas
 import sys
 
 
-class markers_extension(base_extension):
+class markers_os3_extension(base_extension):
 
 	"""
 	desc:
