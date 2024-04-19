@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "opensesame4-plugin-markers"
+version = "1.0.0"
+description = "Markers plugin for OpenSesame 4"
+authors = ["Iris Spruit <i.m.spruit@fsw.leidenuniv.nl>"]
+readme = "readme.md"
+repository = "https://github.com/solo-fsw/opensesame4_plugin_markers"
+packages = [
+    {include = "opensesame_plugins"},
+    {include = "opensesame_extensions"},
+]
+
+[tool.poetry.dependencies]
+python = ">= 3.7"
+python-opensesame = ">= 3.3.0a0"
+marker-management = {git = "https://github.com/solo-fsw/python-markers.git", rev = "7dd3cfa27125116d15c213f05673bd1c9757100a"}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
