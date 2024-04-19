@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "opensesame4-plugin-markers"
+name = "opensesame3-plugin-markers"
 version = "1.0.0"
-description = "Markers plugin for OpenSesame 4"
+description = "Markers plugin for OpenSesame 3"
 authors = ["Iris Spruit <i.m.spruit@fsw.leidenuniv.nl>"]
 readme = "readme.md"
-repository = "https://github.com/solo-fsw/opensesame4_plugin_markers"
+repository = "https://github.com/solo-fsw/opensesame3_plugin_markers"
 packages = [
     {include = "opensesame_plugins"},
     {include = "opensesame_extensions"},
