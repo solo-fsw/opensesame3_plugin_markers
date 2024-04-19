@@ -1,1 +1,0 @@
-"""This extension is part of the markers_os4 plugin and creates the markers Tab after the experiment finished."""
