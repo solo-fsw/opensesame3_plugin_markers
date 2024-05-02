@@ -6,15 +6,11 @@ Part of the markers_os3 plugin.
 """
 
 import time
-import os
-import json
 from libopensesame.py3compat import *
-from libopensesame.exceptions import osexception
 from libqtopensesame.extensions import base_extension
-from libopensesame import misc
-from libqtopensesame.misc.translate import translation_context
-import markdown
-import pandas
+from libopensesame.plugins import list_plugins, plugin_disabled
+from libopensesame.metadata import major_version
+from libqtopensesame.misc.config import cfg
 import sys
 
 
@@ -22,8 +18,77 @@ class markers_os3_extension(base_extension):
 
 	"""
 	desc:
-		Shows marker tables in separate tab after an experiment has finished.
+		- Checks OpenSesame version on startup.
+		- Shows marker tables in separate tab after an experiment has finished.
 	"""
+
+	def event_startup(self):
+
+		"""
+		desc:
+			Handles startup of OpenSesame: checks OpenSesame version and other marker plugins
+		"""		
+
+		md = ''	
+
+		if major_version[0] == '3':
+
+			list_wrong_plugins = ["markers_os4_extension", "markers_os4_init", "markers_os4_send", "markers_extension", "markers_init", "markers_send"]
+			plugins_available = []
+
+			# Get list of plugins and extensions
+			plugin_list = list_plugins(filter_disabled=True)
+			extension_list = list_plugins(filter_disabled=True, _type=u'extensions')
+
+			# Loop through lists and check whether old plugins/extensions are installed
+			for plugin_name in plugin_list:
+				if plugin_name in list_wrong_plugins:
+					cfg_key = f'plugin_enabled_{plugin_name}'
+					# Ignore disabled plugins
+					if cfg_key in cfg and not cfg[cfg_key]:
+						continue
+					plugins_available.append(plugin_name)
+
+			for extension_name in extension_list:
+				if extension_name in list_wrong_plugins:
+					cfg_key = f'plugin_enabled_{extension_name}'
+					# Ignore disabled extension
+					if cfg_key in cfg and not cfg[cfg_key]:
+						continue
+					plugins_available.append(extension_name)
+
+			if plugins_available:
+				self.extension_manager.fire(u'notify',
+					message=_(u'One or more marker plugins with incompatible versions were found. Check the markers plugin warning tab for more info.'),
+					category=u'warning')
+				
+				md += '**Warning:** The following marker plugins/extensions were found: \n\n'
+				for plugin in plugins_available:
+					md += '- ' + str(plugin) + '\n\n'
+
+				md += '''These plugins/extensions should not be used in OpenSesame 3. 
+						It is advised to disable them in Tools > Plug-in and extension manager.'''
+
+				self.tabwidget.open_markdown(md, title=_(u'Markers plugin warning'), icon=u'document-new')
+
+		else:
+
+			self.extension_manager.fire(u'notify',
+				message=_(u'The markers_os3 plugin can only run in OpenSesame 3. Check the markers plugin warning tab for more info.'),
+				category=u'warning')
+			
+			md += '**Warning:** The markers_os3 plugin has been installed, but will not work in the current version of OpenSesame.\n\n'
+			md += 'This plugin contains the following elements:\n\n'
+			md += '- markers_os3_extension\n\n'
+			md += '- markers_os3_init\n\n'
+			md += '- markers_os3_send\n\n'
+			md += 'It is advised to disable the plugins/extensions as listed above in Tools > Plug-in and extension manager.\n\n'
+			md += '''When using OpenSesame 4 and you want to send markers with a Leiden Univ marker device, 
+					please install the markers_os4 plugin: 
+					[https://github.com/solo-fsw/opensesame4_plugin_markers](https://github.com/solo-fsw/opensesame4_plugin_markers).'''
+		
+			self.tabwidget.open_markdown(md, title=_(u'Markers plugin warning'), icon=u'document-new')
+
 
 	def event_end_experiment(self, ret_val):
 
