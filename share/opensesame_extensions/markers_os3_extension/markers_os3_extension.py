@@ -26,8 +26,23 @@ class markers_os3_extension(base_extension):
 
 		"""
 		desc:
-			Handles startup of OpenSesame: checks OpenSesame version and other marker plugins
+			Handles startup of OpenSesame
 		"""		
+
+		self.check_version()
+
+
+	def event_open_experiment(self, path):
+
+		"""
+		desc:
+			Handles open experiment
+		"""	
+
+		self.check_version()
+		
+
+	def check_version(self):		
 
 		md = ''	
 
