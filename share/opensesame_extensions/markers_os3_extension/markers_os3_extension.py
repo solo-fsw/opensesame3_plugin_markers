@@ -40,7 +40,7 @@ class markers_os3_extension(base_extension):
 		"""	
 
 		self.check_version()
-		
+
 
 	def check_version(self):		
 
@@ -77,12 +77,12 @@ class markers_os3_extension(base_extension):
 					message=_(u'One or more marker plugins with incompatible versions were found. Check the markers plugin warning tab for more info.'),
 					category=u'warning')
 				
-				md += '**Warning:** The following marker plugins/extensions were found: \n\n'
+				md += '**Warning:** The following incompatible marker plugins/extensions were found: \n\n'
 				for plugin in plugins_available:
 					md += '- ' + str(plugin) + '\n\n'
 
 				md += '''These plugins/extensions should not be used in OpenSesame 3. 
-						It is advised to disable them in Tools > Plug-in and extension manager.'''
+						Please disable them in **Tools** > **Plug-in and extension manager** and instead use the markers_os3 plugin and extension.'''
 
 				self.tabwidget.open_markdown(md, title=_(u'Markers plugin warning'), icon=u'document-new')
 
