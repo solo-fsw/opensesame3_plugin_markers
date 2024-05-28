@@ -1,3 +1,5 @@
 # OpenSesame data files
 *.csv
 *.tsv
+
+__pycache__/
