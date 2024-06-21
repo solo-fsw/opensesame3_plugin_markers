@@ -39,7 +39,7 @@ To send a marker, add a markers_os3_send item to the place in your experiment wh
 
 - **Object duration (ms):** The duration of the markers_os3_send item. This is not necessarily the same as the duration of the marker! Only when *Reset marker value to zero* is checked, the object duration is the same as the marker duration.
 
-- **Reset marker value to zero:** When checked, the marker value will automatically reset to 0 after the object duration.
+- **Reset marker value to zero:** When checked, the marker value will automatically reset to 0 after the object duration. It is advised to only use this setting when the object duration is at least a few ms (minimal duration depends on the sampling rate of the device that receives the marker).
 
 # Object Placement and Timing
 For proper understanding of object placement and timing, it is important to note that the Markers items (markers_os3_init and markers_os3_send) do not have a visual component on the screen. Thus, during the duration of these items, what was already presented on the screen, will stay on the screen.
