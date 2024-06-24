@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "opensesame3-plugin-markers"
-version = "1.0.0"
+version = "0.2.0"
 description = "Markers plugin for OpenSesame 3"
 authors = ["Iris Spruit <i.m.spruit@fsw.leidenuniv.nl>"]
 readme = "readme.md"
