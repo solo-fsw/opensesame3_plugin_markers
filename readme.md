@@ -49,7 +49,7 @@ When using OpenSesame that was installed in a Conda environment, the plugin shou
 ## How to use
 Help and instructions on how to use the plugin can be found [here](/share/opensesame_plugins/markers_os3_init/markers_os3_init.md) and in OpenSesame it can be found after inserting a markers item in your experiment by clicking on the blue questionmark in the upper right corner of the markers item tab. ![image](https://user-images.githubusercontent.com/56065641/217841460-634aee68-7b98-4154-8275-ac75337788e7.png).
 
-In the samples folder a sample task can be found, which can also be downloaded [here](https://downgit.github.io/#/home?url=https://github.com/solo-fsw/opensesame3_plugin_markers/tree/main/samples) (download starts immediately using DownGit).
+In the samples folder a sample task can be found, which can also be downloaded [here](https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fsolo-fsw%2Fopensesame3_plugin_markers%2Ftree%2Fmain%2Fsamples) (download starts immediately).
 
 ## Timing test
 The timing of the plugin was tested by comparing the onset of a pulse sent with the plugin to the UsbParMarker with the onset of a pulse sent to the LPT port (the original way of sending markers). Both signals were recorded with BIOPAC in AcqKnowledge. An average difference of 133 us (range 100 us - 300 us) was found when sending a pulse first to the LPT port, then to the UsbParMarker and an average difference of 236 us (range 140 us - 360 us) was found when sending a pulse first to the UsbParMarker, then to the LPT port (20 trials each). See the timing_test folder for the experiment used and the AcqKnowledge data files. 
