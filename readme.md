@@ -1,4 +1,4 @@
-# Plugin for OpenSesame for sending markers
+# Plugin for OpenSesame 3 for sending markers
 This is an OpenSesame plugin for sending markers with Leiden University devices. This plugin uses the marker_management module from the python markers repo: https://github.com/solo-fsw/python-markers
 
 > [!IMPORTANT]
