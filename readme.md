@@ -1,19 +1,16 @@
 # Plugin for OpenSesame for sending markers
 This is an OpenSesame plugin for sending markers with Leiden University devices. This plugin uses the marker_management module from the python markers repo: https://github.com/solo-fsw/python-markers
 
-> **Note**
-> This plugin is only available for OpenSesame 3. The markers plugin for OpenSesame 4 can be found here: [https://github.com/>  solo-fsw/opensesame4_plugin_markers](https://github.com/solo-fsw/opensesame4_plugin_markers)
-> 
-> **Note**
-> This plugin is only available for Windows. 
+> [!IMPORTANT]
+> - Before following the instructions, make sure Git is installed, see https://git-scm.com/downloads.
+> - This plugin is only available for Windows. 
+> - This plugin is only available for OpenSesame 3. The markers plugin for OpenSesame 4 can be found here: [https://github.com/>  solo-fsw/opensesame4_plugin_markers](https://github.com/solo-fsw/opensesame4_plugin_markers)
 
 ## Installation
 How the markers package can best be installed depends on the OpenSesame installation and whether it is installed system-wide (available for all users of the pc, usually through the Start menu), or whether it is installed in a Conda environment.
 
 ### OpenSesame system installation
 When using a system-wide installation of OpenSesame, the plugin can be installed in the Users folder `C:\Users\%USERNAME%\AppData\Roaming\Python\Python37\site-packages`. To do so, the `--user` flag must be used when installing the plugin with `pip install`. When different users need to use the plugin on one computer, they must all install the plugin separately.
-
-- Make sure Git is installed.
 
 - Open the system installation of OpenSesame (e.g. from the Start menu). 
 
@@ -31,8 +28,6 @@ When using a system-wide installation of OpenSesame, the plugin can be installed
 ### OpenSesame in Conda environment
 When using OpenSesame that was installed in a Conda environment, the plugin should be installed in that environment. When you use different environments, the plugin needs to be installed in each of the environments. The plugin is not installed per user, therefore, do not use the `--user` flag when installing the plugin with `pip install`.
 
-- Make sure Git is installed.
-
 - Start OpenSesame in the Conda environment.
 
 - In OpenSesame, run from the Console:
@@ -45,6 +40,14 @@ When using OpenSesame that was installed in a Conda environment, the plugin shou
 
     ![markers_init](/share/opensesame_plugins/markers_os3_init/markers_os3_init_large.png)
     ![markers_send](/share/opensesame_plugins/markers_os3_send/markers_os3_send_large.png)
+
+### Troubleshooting:
+**Git not found:** If you receive the following error when trying to install the markers plugin: `ERROR: Cannot find command 'git' - do you have 'git' installed and in your PATH?`:
+- Make sure you have Git installed, see https://git-scm.com/downloads
+- When you have Git installed, it may be necessary to add Git to your path. To do so, in OpenSesame run from the Console:
+    - `import os`
+    - `os.environ["PATH"] += os.pathsep + r"<PATH TO GIT>"` where `<PATH TO GIT>` is the path to the Git application. Usually, when Git is installed system wide, Git is located in Program Files. In this case, type `os.environ["PATH"] += os.pathsep + r"C:\Program Files\Git\cmd"`
+- Then, try installing the markers plugin again.
 
 ## How to use
 Help and instructions on how to use the plugin can be found [here](/share/opensesame_plugins/markers_os3_init/markers_os3_init.md) and in OpenSesame it can be found after inserting a markers item in your experiment by clicking on the blue questionmark in the upper right corner of the markers item tab. ![image](https://user-images.githubusercontent.com/56065641/217841460-634aee68-7b98-4154-8275-ac75337788e7.png).
